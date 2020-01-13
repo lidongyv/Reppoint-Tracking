@@ -55,6 +55,8 @@ coverage.xml
 *.mp4
 *.tar.gz
 *.zip
+*.pyc
+*.so
 # Sphinx documentation
 docs/_build/
 
