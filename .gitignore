@@ -47,12 +47,32 @@ coverage.xml
 # Translations
 *.mo
 *.pot
-
+*.pth
 # Django stuff:
 *.log
-
+*.png
+*.jpg
+*.mp4
+*.tar.gz
+*.zip
 # Sphinx documentation
 docs/_build/
 
 # PyBuilder
 target/
+.history/
+backgit/
+mmdetection_back/
+mmdetection_modify/
+data/
+debug/
+demo/
+final/
+fix_weight/
+fusev1/
+offset/
+offset_back/
+out/
+result/
+trained/
+work_dirs/
