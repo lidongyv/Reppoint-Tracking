@@ -5,7 +5,7 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch.nn as nn
-from IPython import embed
+# #from IPython import embed
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
 

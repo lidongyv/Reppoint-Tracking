@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from tsnecuda import TSNE
 from tqdm import tqdm
 
-from IPython import embed
+#from IPython import embed
 
 
 def main():

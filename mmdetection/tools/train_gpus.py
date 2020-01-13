@@ -4,7 +4,7 @@ import os
 import tqdm
 import random
 import torch
-from IPython import embed
+#from IPython import embed
 from collections import OrderedDict
 import mmcv
 from mmcv import Config

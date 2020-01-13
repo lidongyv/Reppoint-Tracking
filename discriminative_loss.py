@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from IPython import embed
+#from IPython import embed
 
 
 class DiscriminativeLossL2(_Loss):

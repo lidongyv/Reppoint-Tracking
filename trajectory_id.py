@@ -5,7 +5,7 @@ import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from IPython import embed
+#from IPython import embed
 
 def generate_flow(img1, img2):
     """To be implemented, for online flow generation"""

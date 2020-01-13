@@ -149,7 +149,7 @@ total_epochs = 30
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/agg_st_stsn_dcnv2_mean_kernel_fix_rep_support_class3_fuse_test'
-load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_19.pth'
+load_from = '/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
 resume_from = None
 auto_resume = True
 workflow = [('train', 1)]

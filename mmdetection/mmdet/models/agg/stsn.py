@@ -1177,493 +1177,7 @@ class STSN_fuse(nn.Module):
 
         return out
 @AGG.register_module
-class STSN_fuse_c(nn.Module):
-    #fuse on each channel
-    def __init__(self,in_channels,out_channels,dcn):
-        super(STSN_fuse_c,self).__init__()
-        self.deformable_groups = dcn.get('deformable_groups', 1)
-        self.with_modulated_dcn = dcn.get('modulated', False)
-        if not self.with_modulated_dcn:
-            conv_op = DeformConv
-            offset_channels = 18
-        else:
-            conv_op = ModulatedDeformConv
-            offset_channels = 27
-        #agg1
-        self.conv11_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv11 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
-        self.conv12_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv12 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        self.conv13_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv13 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        self.conv14_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv14 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        #agg2
-        self.conv21_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv21 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
-        self.conv22_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv22 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        self.conv23_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv23 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        #agg3
-        self.conv31_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv31 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
-        self.conv32_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv32 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        self.conv33_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv33 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        #agg4
-        self.conv41_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv41 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
-        self.conv42_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv42 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-
-
-        #agg5
-        self.conv51_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv51 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
-        self.conv52_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv52 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
-        self.weight_conv=nn.Sequential(nn.Conv3d(out_channels,out_channels,
-                                    kernel_size=(3,1,1), stride=1,padding=(1,0,0),dilation=1),
-                                        nn.Conv3d(out_channels,out_channels,
-                                    kernel_size=(3,1,1), stride=1,padding=(1,0,0),dilation=1))
-        self.relu=nn.LeakyReLU(inplace=True)
-        self.offset=[]
-        self.mask=[]
-        print('init transform kernel')
-        self.trans_kernel=torch.from_numpy(np.load('/home/ld/RepPoints/mmdetection/mmdet/ops/dcn/init_kernel.npy'))
-        self.trans_kernel=nn.Parameter(self.trans_kernel)
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = logging.getLogger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.conv11_offset, std=0.01)
-        normal_init(self.conv11, std=0.01)
-        normal_init(self.conv12_offset, std=0.01)
-        normal_init(self.conv12, std=0.01)
-        normal_init(self.conv13_offset, std=0.01)
-        normal_init(self.conv13, std=0.01)
-        normal_init(self.conv14_offset, std=0.01)
-        normal_init(self.conv14, std=0.01)
-        normal_init(self.conv21_offset, std=0.01)
-        normal_init(self.conv21, std=0.01)
-        normal_init(self.conv22_offset, std=0.01)
-        normal_init(self.conv22, std=0.01)
-        normal_init(self.conv23_offset, std=0.01)
-        normal_init(self.conv23, std=0.01)
-        normal_init(self.conv31_offset, std=0.01)
-        normal_init(self.conv31, std=0.01)
-        normal_init(self.conv32_offset, std=0.01)
-        normal_init(self.conv32, std=0.01)
-        normal_init(self.conv33_offset, std=0.01)
-        normal_init(self.conv33, std=0.01)
-        normal_init(self.conv41_offset, std=0.01)
-        normal_init(self.conv41, std=0.01)
-        normal_init(self.conv42_offset, std=0.01)
-        normal_init(self.conv42, std=0.01)
-        normal_init(self.conv51_offset, std=0.01)
-        normal_init(self.conv51, std=0.01)
-        normal_init(self.conv52_offset, std=0.01)
-        normal_init(self.conv52, std=0.01)
-
-    def agg1(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            offset_mask1 = self.conv11_offset(feature_f0)
-            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv11(feature_f0, offset, mask)
-
-            offset_mask2 = self.conv12_offset(out)
-            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv12(out, offset, mask)
-
-            offset_mask3 = self.conv13_offset(out)
-            offset = offset_mask3[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask3[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv13(out, offset, mask)
-
-            offset_mask4 = self.conv14_offset(out)
-            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
-            # mask = mask.sigmoid()
-            mask=torch.nn.functional.softmax(mask,dim=1)
-            # print('mask weight',torch.max(mask,dim=1)[0].mean().item())
-            kernel_weight=self.trans_kernel.detach()*9
-            
-            self.conv14.weight=nn.Parameter(self.trans_kernel.detach())
-
-            out = self.conv14(support, offset, mask)
-            if test:
-                return out,offset,mask
-            else:
-                return out
-        else:
-            # print('agg1',feature_f0.device,self.conv11_offset.weight.device)
-            offset1=self.conv11_offset(feature_f0)
-
-            feature_f1=self.conv11(feature_f0,offset1)
-
-            offset2=self.conv12_offset(feature_f1)
-
-            feature_f2=self.conv12(feature_f1,offset2)
-
-            offset3=self.conv13_offset(feature_f2)
-
-            feature_f3=self.conv13(feature_f2,offset3)
-
-            offset4=self.conv14_offset(feature_f3)
-            self.conv14.weight=nn.Parameter(self.trans_kernel.detach())
-
-            agg_features=self.conv14(support,offset4)
-
-        if test:
-            return agg_features,offset4
-        else:
-            return agg_features
-
-
-    def agg2(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            offset_mask1 = self.conv21_offset(feature_f0)
-            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv21(feature_f0, offset, mask)
-
-            offset_mask2 = self.conv22_offset(out)
-            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv22(out, offset, mask)
-
-            offset_mask4 = self.conv23_offset(out)
-            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
-            # mask = mask.sigmoid()
-            mask=torch.nn.functional.softmax(mask,dim=1)
-            kernel_weight=self.trans_kernel.detach()*9
-            
-            self.conv23.weight=nn.Parameter(self.trans_kernel.detach())
-
-            out = self.conv23(support, offset, mask)
-            if test:
-                return out,offset,mask
-            else:
-                return out
-        else:
-            offset1=self.conv21_offset(feature_f0)
-
-            feature_f1=self.conv21(feature_f0,offset1)
-
-            offset2=self.conv22_offset(feature_f1)
-
-            feature_f2=self.conv22(feature_f1,offset2)
-
-            offset3=self.conv23_offset(feature_f2)
-            self.conv23.weight=nn.Parameter(self.trans_kernel.detach())
-
-            agg_features=self.conv23(support,offset3)
-
-        if test:
-            return agg_features,offset3
-        else:
-            return agg_features
-
-    def agg3(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            offset_mask1 = self.conv31_offset(feature_f0)
-            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv31(feature_f0, offset, mask)
-
-            offset_mask2 = self.conv32_offset(out)
-            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
-            mask = mask.sigmoid()
-            out = self.conv32(out, offset, mask)
-
-            offset_mask4 = self.conv33_offset(out)
-            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
-            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
-            # mask = mask.sigmoid()
-            mask=torch.nn.functional.softmax(mask,dim=1)
-            kernel_weight=self.trans_kernel.detach()*9
-            
-            self.conv33.weight=nn.Parameter(self.trans_kernel.detach())
-
-            out = self.conv33(support, offset, mask)
-            if test:
-                return out,offset,mask
-            else:
-                return out
-        else:
-            offset1=self.conv31_offset(feature_f0)
-
-            feature_f1=self.conv31(feature_f0,offset1)
-
-            offset2=self.conv32_offset(feature_f1)
-
-            feature_f2=self.conv32(feature_f1,offset2)
-
-            offset3=self.conv33_offset(feature_f2)
-            self.conv33.weight=nn.Parameter(self.trans_kernel.detach())
-
-            agg_features=self.conv33(support,offset3)
-
-        if test:
-            return agg_features,offset3
-        else:
-            return agg_features
-
-    def agg4(self,support,reference,test=False):
-        
-            feature_f0=torch.cat([support,reference],dim=1)
-
-            if self.with_modulated_dcn:
-                offset_mask1 = self.conv41_offset(feature_f0)
-                offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
-                mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
-                mask = mask.sigmoid()
-                out = self.conv41(feature_f0, offset, mask)
-
-                offset_mask4 = self.conv42_offset(out)
-                offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
-                mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
-                # mask = mask.sigmoid()
-                mask=torch.nn.functional.softmax(mask,dim=1)
-                kernel_weight=self.trans_kernel.detach()*9
-                
-                self.conv42.weight=nn.Parameter(self.trans_kernel.detach())
-
-                out = self.conv42(support, offset, mask)
-                if test:
-                    return out,offset,mask
-                else:
-                    return out
-            else:
-                offset1=self.conv41_offset(feature_f0)
-
-                feature_f1=self.conv41(feature_f0,offset1)
-
-                offset2=self.conv42_offset(feature_f1)
-                self.conv42.weight=nn.Parameter(self.trans_kernel.detach())
-
-                agg_features=self.conv42(support,offset2)
-
-            if test:
-                return agg_features,offset2
-            else:
-                return agg_features
-    def agg5(self,support,reference,test=False):
-        
-            feature_f0=torch.cat([support,reference],dim=1)
-
-            if self.with_modulated_dcn:
-                offset_mask1 = self.conv51_offset(feature_f0)
-                offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
-                mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
-                mask = mask.sigmoid()
-                out = self.conv51(feature_f0, offset, mask)
-
-                offset_mask4 = self.conv52_offset(out)
-                offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
-                mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
-                # mask = mask.sigmoid()
-                mask=torch.nn.functional.softmax(mask,dim=1)
-                kernel_weight=self.trans_kernel.detach()*9
-                
-                self.conv52.weight=nn.Parameter(self.trans_kernel.detach())
-
-                out = self.conv52(support, offset, mask)
-                if test:
-                    return out,offset,mask
-                else:
-                    return out
-            else:
-                offset1=self.conv51_offset(feature_f0)
-
-                feature_f1=self.conv51(feature_f0,offset1)
-
-                offset2=self.conv52_offset(feature_f1)
-                self.conv52.weight=nn.Parameter(self.trans_kernel.detach())
-
-                agg_features=self.conv52(support,offset2)
-
-            if test:
-                return agg_features,offset2
-            else:
-                return agg_features
-    def forward(self,datas,test=False):
-        # torch.Size([2, 256, 48, 156])
-        # torch.Size([2, 256, 24, 78])
-        # torch.Size([2, 256, 12, 39])
-        # torch.Size([2, 256, 6, 20])
-        # torch.Size([2, 256, 3, 10])
-        print('fuse channel')
-        agg_output=[]
-        refer_out=[]
-        support1_out=[]
-        support2_out=[]
-        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
-        shuffle_id=np.random.randint(low=0,high=datas[0].shape[0],size=datas[0].shape[0])
-        shuffle_id[shuffle_id==np.arange(datas[0].shape[0])]=shuffle_id[shuffle_id==np.arange(datas[0].shape[0])]-1
-        shuffle_id2=np.random.randint(low=0,high=datas[0].shape[0],size=datas[0].shape[0])
-        shuffle_id2[shuffle_id2==np.arange(datas[0].shape[0])]=shuffle_id2[shuffle_id2==np.arange(datas[0].shape[0])]-1
-        # print('shuffle id:',shuffle_id)
-        # print('shuffle id2:',shuffle_id2)
-        for i in range(len(datas)):
-            reference=datas[i]+0
-            support=datas[i][shuffle_id,:,:,:]+0
-            tk_feature1=self.agg[i](support.detach(),reference.detach(),test)
-            support=datas[i][shuffle_id2,:,:,:]+0
-            tk_feature2=self.agg[i](support.detach(),reference.detach(),test)
-            
-            # weight1=torch.nn.functional.cosine_similarity(reference.detach(),tk_feature1,dim=1).unsqueeze(1).unsqueeze(1)
-            # weight2=torch.nn.functional.cosine_similarity(reference.detach(),tk_feature2,dim=1).unsqueeze(1).unsqueeze(1)
-            # weight0=torch.ones_like(weight1)
-            # weight=torch.nn.functional.softmax(torch.cat([weight0,weight1,weight2],dim=1),dim=1)
-            weight_f=torch.cat([reference.unsqueeze(2),tk_feature1.unsqueeze(2),tk_feature2.unsqueeze(2)],dim=2)
-            weight_f=self.weight_conv(weight_f)
-            weight=torch.nn.functional.softmax(weight_f,dim=2)
-            print('agg weight',(weight[:,:,0,...]).max().item(),((weight[:,:,0,...]).max()>0.7).float().sum().item())
-            feature=torch.cat([reference.unsqueeze(2),tk_feature1.unsqueeze(2),tk_feature2.unsqueeze(2)],dim=2)
-            agg_feature=torch.sum(feature*weight,dim=2)
-            agg_output.append(agg_feature)
-            refer_out.append(reference)
-            support1_out.append(tk_feature1)
-            support2_out.append(tk_feature2)
-        # print(len(agg_output),len(refer_out),len(support1_out),print(support2_out))
-        return [tuple(agg_output),tuple(refer_out),tuple(support1_out),tuple(support2_out)]
-
-    def forward_test(self,datas,test=True):
-        output=[]
-        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
-        print('stsn test')
-        self.offset=[]
-        self.mask=[]
-        for i in range(len(datas)):
-            reference=datas[i][:1,:,:,:]+0
-            if datas[i].shape[0]>1:
-                shuffle_id=np.random.randint(low=1,high=datas[i].shape[0],size=1)
-                support=datas[i][shuffle_id,:,:,:]+0
-            else:
-                shuffle_id=[0]
-                support=datas[i][shuffle_id,:,:,:]+0
-
-            if self.with_modulated_dcn:
-                tk_feature,soffset4,mask4=self.agg[i](support,reference,test)
-                self.offset.append(soffset4)
-                self.mask.append(mask4)
-
-            else:
-                tk_feature,soffset4=self.agg[i](support,reference,test)
-                self.offset.append(soffset4)
-            weight1=torch.nn.functional.cosine_similarity(reference,tk_feature,dim=1).unsqueeze(1).unsqueeze(1)
-            weight0=torch.ones_like(weight1)
-            weight=torch.nn.functional.softmax(torch.cat([weight0,weight1],dim=1),dim=1)
-            feature=torch.cat([reference.unsqueeze(1),tk_feature.unsqueeze(1)],dim=1)
-            agg_feature=torch.sum(feature*weight,dim=1)
-            output.append(agg_feature)
-        return tuple(output)
-    def forward_eval(self,datas,test=True):
-        output=[]
-        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
-        print('stsn eval')
-        self.offset=[]
-        self.mask=[]
-        refer_out=[]
-        agg_out=[]
-        support_out=[]
-        self.offset=[]
-        self.mask=[]
-        for i in range(datas[0].shape[0]-1):
-            support_out.append([])
-            self.offset.append([])
-            self.mask.append([])
-        out=[]
-        
-
-        for i in range(len(datas)):
-            reference=datas[i][:1,:,:,:]+0
-            refer_out.append(reference)
-            if datas[i].shape[0]>1:
-                support=datas[i][1:,:,:,:]+0
-            else:
-                shuffle_id=[0]
-                support=datas[i][:1,:,:,:]+0
-            # weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
-            feature=reference.unsqueeze(2)
-            for j in range(support.shape[0]):
-                tk_feature,offset,mask=self.agg[i](support[j:j+1,...],reference,test)
-                # weight=torch.nn.functional.cosine_similarity(reference,tk_feature,dim=1).unsqueeze(1).unsqueeze(1)
-                # weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(2)],dim=2)
-                support_out[j].append(tk_feature)
-                self.offset[j].append(offset)
-                self.mask[j].append(mask)
-        weight_f=feature+0
-        weight_f=self.weight_conv(weight_f)
-        weight=torch.nn.functional.softmax(weight_f,dim=2)
-        agg_feature=torch.sum(feature*weight,dim=2)
-        agg_out.append(agg_feature)
-        for i in range(datas[0].shape[0]-1):
-            support_out[i]=tuple(support_out[i])
-        out=[tuple(refer_out),tuple(agg_out)]+support_out
-
-        return out
-@AGG.register_module
 class STSN_fuse_t(nn.Module):
-    #trainable dcn weight
     def __init__(self,in_channels,out_channels,dcn):
         super(STSN_fuse_t,self).__init__()
         self.deformable_groups = dcn.get('deformable_groups', 1)
@@ -4237,4 +3751,442 @@ class STSN_c(nn.Module):
             feature=torch.cat([tk_feature0.unsqueeze(1),tk_feature1.unsqueeze(1)],dim=1)
             agg_feature=torch.sum(feature*weight,dim=1)
             output.append(tk_feature0)
+        return tuple(output)
+class STSN_c_ori(nn.Module):
+    #learnable dcn weight
+    def __init__(self,in_channels,out_channels,dcn):
+        super(STSN_c_ori,self).__init__()
+        self.deformable_groups = dcn.get('deformable_groups', 1)
+        self.with_modulated_dcn = dcn.get('modulated', False)
+        if not self.with_modulated_dcn:
+            conv_op = DeformConv
+            offset_channels = 18
+        else:
+            conv_op = ModulatedDeformConv
+            offset_channels = 27
+        #agg1
+        self.conv11_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                                    kernel_size=3, stride=1,padding=1,dilation=1)
+        self.conv11 = conv_op(out_channels, out_channels, kernel_size=3, stride=1,
+                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
+        self.conv12_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
+                            kernel_size=3, stride=1, padding=1, dilation=1)
+        self.conv12 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        self.conv13_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv13 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        self.conv14_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv14 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        #agg2
+        self.conv21_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                                    kernel_size=3, stride=1,padding=1,dilation=1)
+        self.conv21 = conv_op(out_channels, out_channels, kernel_size=3, stride=1,
+                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
+        self.conv22_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
+                            kernel_size=3, stride=1, padding=1, dilation=1)
+        self.conv22 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        self.conv23_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv23 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        #agg3
+        self.conv31_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                                    kernel_size=3, stride=1,padding=1,dilation=1)
+        self.conv31 = conv_op(out_channels, out_channels, kernel_size=3, stride=1,
+                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
+        self.conv32_offset = nn.Conv2d(in_channels, self.deformable_groups * offset_channels,
+                            kernel_size=3, stride=1, padding=1, dilation=1)
+        self.conv32 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        self.conv33_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv33 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+        #agg4
+        self.conv41_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                                    kernel_size=3, stride=1,padding=1,dilation=1)
+        self.conv41 = conv_op(out_channels, out_channels, kernel_size=3, stride=1,
+                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
+        self.conv42_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv42 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+
+
+        #agg5
+        self.conv51_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                                    kernel_size=3, stride=1,padding=1,dilation=1)
+        self.conv51 = conv_op(out_channels, out_channels, kernel_size=3, stride=1,
+                            padding=1, dilation=1, deformable_groups=self.deformable_groups, bias=False)
+        self.conv52_offset = nn.Conv2d(in_channels,self.deformable_groups * offset_channels,
+                            kernel_size=3,stride=1,padding=1,dilation=1)
+        self.conv52 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+                            padding=1,dilation=1,deformable_groups=self.deformable_groups,bias=False)
+
+        self.relu=nn.LeakyReLU(inplace=True)
+        self.offset=[]
+        self.mask=[]
+        print('init transform kernel')
+        for i in range(256):
+            for j in range(256):
+                for m in range(3):
+                    for n in range(3):
+                        if i==j:
+                            self.trans_kernel[i,j,m,n]=self.trans_kernel[i,j,m,n]/self.trans_kernel[i,j,m,n]
+                            self.trans_kernel[i,j,m,n]=self.trans_kernel[i,j,m,n]/9
+                        else:
+                            self.trans_kernel[i,j,m,n]=self.trans_kernel[i,j,m,n]*0
+        np.save('/home/ld/RepPoints/mmdetection/mmdet/ops/dcn/init_kernel.npy',self.trans_kernel.data.cpu().numpy())
+        self.trans_kernel=torch.from_numpy(np.load('/home/ld/RepPoints/mmdetection/mmdet/ops/dcn/init_kernel.npy'))
+        self.trans_kernel=nn.Parameter(self.trans_kernel)
+    def init_weights(self, pretrained=None):
+        if isinstance(pretrained, str):
+            logger = logging.getLogger()
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
+        elif pretrained is None:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    kaiming_init(m)
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                    constant_init(m, 1)
+        bias_cls = bias_init_with_prob(0.01)
+        normal_init(self.conv11_offset, std=0.01)
+        normal_init(self.conv11, std=0.01)
+        normal_init(self.conv12_offset, std=0.01)
+        normal_init(self.conv12, std=0.01)
+        normal_init(self.conv13_offset, std=0.01)
+        normal_init(self.conv13, std=0.01)
+        normal_init(self.conv14_offset, std=0.01)
+        normal_init(self.conv14, std=0.01)
+        normal_init(self.conv21_offset, std=0.01)
+        normal_init(self.conv21, std=0.01)
+        normal_init(self.conv22_offset, std=0.01)
+        normal_init(self.conv22, std=0.01)
+        normal_init(self.conv23_offset, std=0.01)
+        normal_init(self.conv23, std=0.01)
+        normal_init(self.conv31_offset, std=0.01)
+        normal_init(self.conv31, std=0.01)
+        normal_init(self.conv32_offset, std=0.01)
+        normal_init(self.conv32, std=0.01)
+        normal_init(self.conv33_offset, std=0.01)
+        normal_init(self.conv33, std=0.01)
+        normal_init(self.conv41_offset, std=0.01)
+        normal_init(self.conv41, std=0.01)
+        normal_init(self.conv42_offset, std=0.01)
+        normal_init(self.conv42, std=0.01)
+        normal_init(self.conv51_offset, std=0.01)
+        normal_init(self.conv51, std=0.01)
+        normal_init(self.conv52_offset, std=0.01)
+        normal_init(self.conv52, std=0.01)
+
+    def agg1(self,support,reference,test=False):
+
+        if self.with_modulated_dcn:
+            fuse=torch.cat([support,reference],dim=1)
+            offset_mask1 = self.conv11_offset(fuse)
+            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv11(support, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask2 = self.conv12_offset(fuse)
+            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv12(out, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask3 = self.conv13_offset(fuse)
+            offset = offset_mask3[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask3[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv13(out, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask4 = self.conv14_offset(fuse)
+            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            # mask=torch.nn.functional.softmax(mask,dim=1)
+            # kernel_weight=self.trans_kernel.detach()*9
+            
+            # self.conv14.weight=nn.Parameter(self.trans_kernel.detach())
+
+            out = self.conv14(out, offset, mask)
+            if test:
+                return out,[offset_mask1,offset_mask2,offset_mask3,offset_mask4]
+            else:
+                return out
+        else:
+            # print('agg1',feature_f0.device,self.conv11_offset.weight.device)
+            fuse=torch.cat([support,reference],dim=1)
+            offset1=self.conv11_offset(fuse)
+
+            feature_f1=self.conv11(support,offset1)
+            fuse=torch.cat([feature_f1,reference],dim=1)
+            offset2=self.conv12_offset(fuse)
+
+            feature_f2=self.conv12(feature_f1,offset2)
+            fuse=torch.cat([feature_f2,reference],dim=1)
+            offset3=self.conv13_offset(fuse)
+
+            feature_f3=self.conv13(feature_f2,offset3)
+            fuse=torch.cat([feature_f3,reference],dim=1)
+            offset4=self.conv14_offset(fuse)
+            # self.conv14.weight=nn.Parameter(self.trans_kernel.detach())
+
+            agg_features=self.conv14(feature_f3,offset4)
+
+            if test:
+                return agg_features,[offset1,offset2,offset3,offset4]
+            else:
+                return agg_features
+
+
+    def agg2(self,support,reference,test=False):
+
+        
+
+        if self.with_modulated_dcn:
+            fuse=torch.cat([support,reference],dim=1)
+            offset_mask1 = self.conv21_offset(fuse)
+            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv21(support, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask2 = self.conv22_offset(fuse)
+            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv22(out, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask4 = self.conv23_offset(fuse)
+            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            # mask=torch.nn.functional.softmax(mask,dim=1)
+            # kernel_weight=self.trans_kernel.detach()*9
+            
+            # self.conv23.weight=nn.Parameter(self.trans_kernel.detach())
+
+            out = self.conv23(out, offset, mask)
+            if test:
+                return out,[offset_mask1,offset_mask2,offset_mask4]
+            else:
+                return out
+        else:
+            fuse=torch.cat([support,reference],dim=1)
+            offset1=self.conv21_offset(fuse)
+
+            feature_f1=self.conv21(support,offset1)
+            fuse=torch.cat([feature_f1,reference],dim=1)
+            offset2=self.conv22_offset(fuse)
+
+            feature_f2=self.conv22(feature_f1,offset2)
+            fuse=torch.cat([feature_f2,reference],dim=1)
+            offset3=self.conv23_offset(fuse)
+            # self.conv23.weight=nn.Parameter(self.trans_kernel.detach())
+
+            agg_features=self.conv23(feature_f2,offset3)
+
+            if test:
+                return agg_features,[offset1,offset2,offset3]
+            else:
+                return agg_features
+
+    def agg3(self,support,reference,test=False):
+
+        
+
+        if self.with_modulated_dcn:
+            fuse=torch.cat([support,reference],dim=1)
+            offset_mask1 = self.conv31_offset(fuse)
+            offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv31(support, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask2 = self.conv32_offset(fuse)
+            offset = offset_mask2[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask2[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            out = self.conv32(out, offset, mask)
+            fuse=torch.cat([out,reference],dim=1)
+            offset_mask4 = self.conv33_offset(fuse)
+            offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
+            mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
+            mask = mask.sigmoid()
+            # mask=torch.nn.functional.softmax(mask,dim=1)
+            # kernel_weight=self.trans_kernel.detach()*9
+            
+            # self.conv33.weight=nn.Parameter(self.trans_kernel.detach())
+
+            out = self.conv33(out, offset, mask)
+            if test:
+                return out,[offset_mask1,offset_mask2,offset_mask4]
+            else:
+                return out
+        else:
+            fuse=torch.cat([support,reference],dim=1)
+            offset1=self.conv31_offset(fuse)
+
+            feature_f1=self.conv31(support,offset1)
+            fuse=torch.cat([feature_f1,reference],dim=1)
+            offset2=self.conv32_offset(fuse)
+
+            feature_f2=self.conv32(feature_f1,offset2)
+            fuse=torch.cat([feature_f2,reference],dim=1)
+            offset3=self.conv33_offset(fuse)
+            # self.conv33.weight=nn.Parameter(self.trans_kernel.detach())
+
+            agg_features=self.conv33(feature_f2,offset3)
+
+            if test:
+                return agg_features,[offset1,offset2,offset3]
+            else:
+                return agg_features
+
+    def agg4(self,support,reference,test=False):
+        
+            
+
+            if self.with_modulated_dcn:
+                fuse=torch.cat([support,reference],dim=1)
+                offset_mask1 = self.conv41_offset(fuse)
+                offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
+                mask = mask.sigmoid()
+                out = self.conv41(support, offset, mask)
+                fuse=torch.cat([out,reference],dim=1)
+                offset_mask4 = self.conv42_offset(fuse)
+                offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
+                mask = mask.sigmoid()
+                # mask=torch.nn.functional.softmax(mask,dim=1)
+                # kernel_weight=self.trans_kernel.detach()*9
+                
+                # self.conv42.weight=nn.Parameter(self.trans_kernel.detach())
+
+                out = self.conv42(out, offset, mask)
+                if test:
+                    return out,[offset_mask1,offset_mask4]
+                else:
+                    return out
+            else:
+                fuse=torch.cat([support,reference],dim=1)
+                offset1=self.conv41_offset(fuse)
+
+                feature_f1=self.conv41(support,offset1)
+                fuse=torch.cat([feature_f1,reference],dim=1)
+                offset2=self.conv42_offset(fuse)
+                # self.conv42.weight=nn.Parameter(self.trans_kernel.detach())
+
+                agg_features=self.conv42(feature_f1,offset2)
+
+            if test:
+                return agg_features,[offset1,offset2]
+            else:
+                return agg_features
+    def agg5(self,support,reference,test=False):
+        
+            
+
+            if self.with_modulated_dcn:
+                fuse=torch.cat([support,reference],dim=1)
+                offset_mask1 = self.conv51_offset(fuse)
+                offset = offset_mask1[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask1[:, -9 * self.deformable_groups:, :, :]
+                mask = mask.sigmoid()
+                out = self.conv51(support, offset, mask)
+                fuse=torch.cat([out,reference],dim=1)
+                offset_mask4 = self.conv52_offset(fuse)
+                offset = offset_mask4[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask4[:, -9 * self.deformable_groups:, :, :]
+                mask = mask.sigmoid()
+                # mask=torch.nn.functional.softmax(mask,dim=1)
+                # kernel_weight=self.trans_kernel.detach()*9
+                
+                # self.conv52.weight=nn.Parameter(self.trans_kernel.detach())
+
+                out = self.conv52(out, offset, mask)
+                if test:
+                    return out,[offset_mask1,offset_mask4]
+                else:
+                    return out
+            else:
+                fuse=torch.cat([support,reference],dim=1)
+                offset1=self.conv51_offset(fuse)
+
+                feature_f1=self.conv51(support,offset1)
+                fuse=torch.cat([feature_f1,reference],dim=1)
+                offset2=self.conv52_offset(fuse)
+                # self.conv52.weight=nn.Parameter(self.trans_kernel.detach())
+
+                agg_features=self.conv52(feature_f1,offset2)
+
+                if test:
+                    return agg_features,[offset1,offset2]
+                else:
+                    return agg_features
+    def forward(self,datas,test=False):
+        # torch.Size([2, 256, 48, 156])
+        # torch.Size([2, 256, 24, 78])
+        # torch.Size([2, 256, 12, 39])
+        # torch.Size([2, 256, 6, 20])
+        # torch.Size([2, 256, 3, 10])
+        output=[]
+        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
+        shuffle_id=np.random.randint(low=0,high=datas[0].shape[0],size=datas[0].shape[0])
+        shuffle_id[shuffle_id==np.arange(datas[0].shape[0])]=shuffle_id[shuffle_id==np.arange(datas[0].shape[0])]-1
+        shuffle_id2=np.random.randint(low=0,high=datas[0].shape[0],size=datas[0].shape[0])
+        shuffle_id2[shuffle_id2==np.arange(datas[0].shape[0])]=shuffle_id2[shuffle_id2==np.arange(datas[0].shape[0])]-1
+        print('shuffle id:',shuffle_id)
+        print('shuffle id2:',shuffle_id2)
+        for i in range(len(datas)):
+            reference=datas[i]+0
+            support=datas[i][shuffle_id,:,:,:]+0
+            tk_feature1=self.agg[i](support,reference,test)
+            support=datas[i][shuffle_id2,:,:,:]+0
+            tk_feature2=self.agg[i](support,reference,test)
+            weight1=torch.nn.functional.cosine_similarity(reference,tk_feature1,dim=1).unsqueeze(1).unsqueeze(1)
+            weight2=torch.nn.functional.cosine_similarity(reference,tk_feature2,dim=1).unsqueeze(1).unsqueeze(1)
+            weight0=torch.ones_like(weight1)
+            weight=torch.nn.functional.softmax(torch.cat([weight0,weight1,weight2],dim=1),dim=1)
+            feature=torch.cat([reference.unsqueeze(1),tk_feature1.unsqueeze(1),tk_feature2.unsqueeze(1)],dim=1)
+            agg_feature=torch.sum(feature*weight,dim=1)
+            output.append(agg_feature)
+        return tuple(output)
+
+    def forward_test(self,datas,test=True):
+        output=[]
+        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
+        print('stsn test')
+        for i in range(len(datas)):
+            
+            reference=datas[i][:1,:,:,:]+0
+            if datas[i].shape[0]>1:
+                shuffle_id=np.random.randint(low=1,high=datas[i].shape[0],size=1)
+                support=datas[i][shuffle_id,:,:,:]+0
+            else:
+                shuffle_id=[0]
+                support=datas[i][shuffle_id,:,:,:]+0
+
+            if self.with_modulated_dcn:
+                print(i)
+                tk_feature,offset_mask=self.agg[i](support,reference,test)
+                self.offset.append(offset_mask)
+            else:
+               
+                tk_feature,offset=self.agg[i](support,reference,test)
+                self.offset.append(offset)
+            weight1=torch.nn.functional.cosine_similarity(reference,tk_feature,dim=1).unsqueeze(1).unsqueeze(1)
+            weight0=torch.ones_like(weight1)
+            weight=torch.nn.functional.softmax(torch.cat([weight0,weight1],dim=1),dim=1)
+            feature=torch.cat([reference.unsqueeze(1),tk_feature.unsqueeze(1)],dim=1)
+            agg_feature=torch.sum(feature*weight,dim=1)
+            output.append(agg_feature)
         return tuple(output)

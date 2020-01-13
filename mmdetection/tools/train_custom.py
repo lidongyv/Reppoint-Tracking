@@ -1,10 +1,10 @@
 from __future__ import division
 import argparse
 import os
-import tqdm
+# import tqdm
 import random
 import torch
-from IPython import embed
+# #from IPython import embed
 from collections import OrderedDict
 import mmcv
 from mmcv import Config
@@ -153,7 +153,7 @@ def main():
 	start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='fuse_c')
+	vis = visdom.Visdom(env='fuse')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
