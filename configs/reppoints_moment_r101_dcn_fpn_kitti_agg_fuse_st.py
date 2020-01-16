@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     agg=dict(
-        type='STSN_fuse_t',
+        type='STSN_fuse_c',
         in_channels=512,
         out_channels=256,
         dcn=dict(
@@ -107,8 +107,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=14,
-    workers_per_gpu=14,
+    imgs_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'kitti_train_3class.json',
@@ -148,7 +148,7 @@ total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/final/fuse_t'
+work_dir = '/home/ld/RepPoints/final/fuse_c_10'
 load_from = '/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None

@@ -153,7 +153,7 @@ def main():
 	start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='fuse')
+	vis = visdom.Visdom(env='fusec')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -243,9 +243,9 @@ def main():
 					log.append(log_var)
 			else:
 				losses, log_vars = parse_losses(losses)
-			if isinstance(losses, list):
-				losses=loss_all[0]+0.5*loss_all[1]+0.5*loss_all[2]+0.5*loss_all[3]
-				losses=losses/2.5
+			# if isinstance(losses, list):
+			# 	losses=loss_all[0]+0.5*loss_all[1]+0.5*loss_all[2]+0.5*loss_all[3]
+			# 	losses=losses/2.5
 			# print(loss_trans.shape)
 			# loss_trans=torch.mean(loss_trans)*0.1
 			# losses=losses+loss_trans
@@ -254,12 +254,22 @@ def main():
 			#	 optimizer.zero_grad()
 			#	 continue
 
-
-			losses.backward()
 			if epoch<10:
-				 optimizer.step()
+				losses=0
+				for l in range(len(loss_all)):
+					if losses<=1:
+						losses=loss_all[l]
+					else:
+						losses+=loss_all[l]/(len(loss_all)-2)
+				losses=losses/3
+				losses.backward()
+				optimizer.step()
+				# optimizer_all.step()
 			else:
-				 optimizer_all.step()
+				losses=loss_all[1]
+				losses.backward()
+				optimizer_all.step()
+
 			# if training_sample<700:
 			# 	optimizer.step()
 			# else:
