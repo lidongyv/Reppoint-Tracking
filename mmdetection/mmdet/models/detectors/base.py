@@ -84,12 +84,11 @@ class BaseDetector(nn.Module):
         imgs_per_gpu = imgs[0].size(0)
         assert imgs_per_gpu == 1
         # print(imgs[0].shape)
-        if imgs[0].shape[1]>3:
+        if imgs[0].shape[1]>10:
             return self.simple_trackor(imgs[0], img_metas[0], **kwargs)
-        if num_augs == 1:
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
-            return self.aug_test(imgs, img_metas, **kwargs)
+            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+
     def predict_boxes(self,img,pos):
         return self.predict_boxes(img,pos)
     @auto_fp16(apply_to=('img', ))

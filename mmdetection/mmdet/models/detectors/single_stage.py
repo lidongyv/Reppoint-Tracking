@@ -83,10 +83,18 @@ class SingleStageDetector(BaseDetector):
                       gt_labels,
                       gt_bboxes_ignore=None):
         x = self.extract_feat(img)
-
+        
+        # print(len(outs))
+        with torch.no_grad():
+            outs = self.bbox_head(x)[0]
+            class_score=[]
+            for i in range(len(outs)):
+                class_score.append(outs[i].detach())
+            class_score=tuple(class_score)
         if self.agg_check:
             # x,trans_loss=self.agg(x)
-            x=self.agg(x)
+            x,loss_check=self.agg(x,class_score)
+        
         if isinstance(x, tuple):
             outs = self.bbox_head(x)
             loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
@@ -104,8 +112,22 @@ class SingleStageDetector(BaseDetector):
                 losses = self.bbox_head.loss(
                     *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
                 losses_all.append(losses)
-                # continue
-            return losses_all
+            class_result=[class_score]
+            with torch.no_grad():
+                for i in range(2,len(x)):
+                    outs = self.bbox_head(x[i])[0]
+                    class_score=[]
+                    for j in range(len(outs)):
+                        class_score.append(outs[j].detach())
+                    class_score=tuple(class_score)
+                    class_result.append(class_score)
+            agg_feature=self.agg.fuse(x,class_result)
+            outs = self.bbox_head(agg_feature)
+            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
+            losses = self.bbox_head.loss(
+                *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+            losses_all[1]=losses
+            return losses_all,loss_check
 
 
     def simple_test(self, img, img_meta, rescale=False):

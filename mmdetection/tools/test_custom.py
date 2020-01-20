@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
-checkpoint_file='/home/ld/RepPoints/final/fuse/epoch_13.pth'
+checkpoint_file='/home/ld/RepPoints/final/fuse_cluster/epoch_9.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -75,7 +75,7 @@ compute_time=0
 out_name=['refer','agg']
 for i in range(10):
 	out_name.append('frame_'+str(i+1))
-out_path='/home/ld/RepPoints/final/epoch13 thres0.1'
+out_path='/home/ld/RepPoints/final/fuse_cluster/epoch9_thres0.1_nms0.3_with3'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	for i in range(12):
@@ -102,9 +102,9 @@ for i in range(10):
 	mask_data.append([])
 
 #load and test
-outputs=mmcv.load('/home/ld/RepPoints/final/epoch13 thres0.1/fuse_result.pkl')
-kitti_eval(outputs, dataset)
-exit()
+# outputs=mmcv.load(out_path+'/fuse_result.pkl')
+# kitti_eval(outputs, dataset)
+# exit()
 
 
 # for i in range(12):
@@ -146,7 +146,6 @@ for i,(frame) in enumerate(data):
 	# img1=os.path.join(data_path,data[i+10]['filename'])
 	result = inference_trackor(model, img_list)
 	for j in range(12):
-
 		bbox_result=result[j][0]
 		loc_result=result[j][1].long()
 		result_record[j].append(bbox_result)

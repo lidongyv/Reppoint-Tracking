@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     agg=dict(
-        type='STSN_fuse_c',
+        type='STSN_fuse_cluster',
         in_channels=512,
         out_channels=256,
         dcn=dict(
@@ -70,6 +70,12 @@ train_cfg = dict(
         allowed_border=-1,
         pos_weight=-1,
         debug=False))
+# test_cfg = dict(
+#     nms_pre=1000,
+#     min_bbox_size=0,
+#     score_thr=0.1,
+#     nms=dict(type='nms', iou_thr=0.3),
+#     max_per_img=100)
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
@@ -107,8 +113,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=14,
-    workers_per_gpu=14,
+    imgs_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'kitti_train_3class.json',
@@ -148,8 +154,9 @@ total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/final/fuse_c'
-load_from = '/home/ld/RepPoints/work_dirs/agg_st_stsn_dcnv2_mean_kernel_fix_rep_support_class3/epoch_19.pth'
+work_dir = '/home/ld/RepPoints/final/fuse_cluster'
+load_from = '/home/ld/RepPoints/final/fuse_cluster/epoch_14.pth'
+# load_from = '/home/ld/RepPoints/work_dirs/agg_st_stsn_dcnv2_mean_kernel_fix_rep_support_class3/epoch_19.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None
 auto_resume = True

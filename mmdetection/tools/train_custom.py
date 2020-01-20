@@ -1,10 +1,10 @@
 from __future__ import division
 import argparse
 import os
-import tqdm
+# import tqdm
 import random
 import torch
-from IPython import embed
+# #from IPython import embed
 from collections import OrderedDict
 import mmcv
 from mmcv import Config
@@ -150,10 +150,11 @@ def main():
 	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.agg.parameters()))
 	check_video=None
+	# start_epoch=checkpoint['epoch']
 	start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='fuse_c')
+	vis = visdom.Visdom(env='fuseclass')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -195,9 +196,10 @@ def main():
 				meta.update(epoch=epoch + 1, iter=i)
 			checkpoint = {
 				'meta': meta,
-				'state_dict': weights_to_cpu(model.state_dict())
+				'state_dict': weights_to_cpu(model.state_dict()),
+				'epoch':epoch
 			}
-			print()
+
 			if optimizer_all is not None:
 				checkpoint['optimizer'] = optimizer_all.state_dict()
 			if not os.path.exists(cfg.work_dir):
@@ -229,7 +231,9 @@ def main():
 						data['img'].data[m][n]=data['img'].data[m][0]
 			
 			# losses,loss_trans=model(return_loss=True, **data)
-			losses=model(return_loss=True, **data)
+			losses,loss_check=model(return_loss=True, **data)
+			loss_check=loss_check.mean()
+			print('loss_check',loss_check.item())
 			# print(losses)
 			if isinstance(losses, list):
 				
@@ -243,9 +247,9 @@ def main():
 					log.append(log_var)
 			else:
 				losses, log_vars = parse_losses(losses)
-			if isinstance(losses, list):
-				losses=loss_all[0]+0.5*loss_all[1]+0.5*loss_all[2]+0.5*loss_all[3]
-				losses=losses/2.5
+			# if isinstance(losses, list):
+			# 	losses=loss_all[0]+0.5*loss_all[1]+0.5*loss_all[2]+0.5*loss_all[3]
+			# 	losses=losses/2.5
 			# print(loss_trans.shape)
 			# loss_trans=torch.mean(loss_trans)*0.1
 			# losses=losses+loss_trans
@@ -254,12 +258,28 @@ def main():
 			#	 optimizer.zero_grad()
 			#	 continue
 
-
-			losses.backward()
-			if epoch<10:
-				 optimizer.step()
+			if epoch<15:
+				losses=0
+				for l in range(len(loss_all)):
+					if l<=1:
+						losses+=loss_all[l]
+					else:
+						losses+=loss_all[l]/(len(loss_all)-2)
+				losses=losses/3+loss_check
+				losses.backward()
+				optimizer.step()
+				# optimizer_all.step()
 			else:
-				 optimizer_all.step()
+				losses=0
+				for l in range(len(loss_all)):
+					if l<=1:
+						losses+=loss_all[l]
+					else:
+						losses+=loss_all[l]/(len(loss_all)-2)
+				losses=losses/2+loss_check
+				losses.backward()
+				optimizer_all.step()
+
 			# if training_sample<700:
 			# 	optimizer.step()
 			# else:
@@ -267,11 +287,21 @@ def main():
 			# print('transform kernel check',model.module.agg.trans_kernel.sum().item())
 			log_vars=log[0]
 
+
+			print('refer')
+			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
+					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
+						'loss_refine_box:',log_vars['loss_pts_refine'])
+			log_vars=log[1]
+			print('agg')
+			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
+					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
+						'loss_refine_box:',log_vars['loss_pts_refine'])
 			vis.line(
-				X=torch.ones(1).cpu() *training_sample,
-				Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
-				win=loss_cls_window,
-				update='append')
+			X=torch.ones(1).cpu() *training_sample,
+			Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
+			win=loss_cls_window,
+			update='append')
 			vis.line(
 				X=torch.ones(1).cpu() * training_sample,
 				Y=(log_vars['loss_pts_init']) * torch.ones(1).cpu(),
@@ -287,21 +317,12 @@ def main():
 				Y=(losses).item() * torch.ones(1).cpu(),
 				win=loss_total_window,
 				update='append')
-			# vis.line(
-			#		 X=torch.ones(1).cpu() * training_sample,
-			#		 Y=loss_trans.item() * torch.ones(1).cpu(),
-			#		 win=loss_trans_window,
-			#		 update='append')
+			vis.line(
+					 X=torch.ones(1).cpu() * training_sample,
+					 Y=loss_check.item() * torch.ones(1).cpu(),
+					 win=loss_trans_window,
+					 update='append')
 
-			print('agg')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])
-			log_vars=log[1]
-			print('refer')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])		
 			log_vars=log[2]
 			print('support')
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
