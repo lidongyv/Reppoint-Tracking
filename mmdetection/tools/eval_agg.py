@@ -18,22 +18,24 @@ import cv2
 # checkpoint_file = '/home/ld/RepPoints/trained/reppoints_moment_r101_dcn_fpn_2x.pth'
 config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
 
-checkpoint_file='/home/ld/RepPoints/final/fuse/epoch_19.pth'
+checkpoint_file='/home/ld/RepPoints/final/fuse_c/epoch_54.pth'
 # config_file ='/home/ld/RepPoints/configs/retinanet_r101_fpn_kitti.py'
 # checkpoint_file='/home/ld/RepPoints/work_dirs/retinanet_r101_fpn_kitti/epoch_50.pth'
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
-data_path='/backdata01/KITTI/kitti/tracking'
+# data_path='/backdata01/KITTI/kitti/tracking'
 # ['calib', 'disparity', 'image_02', 'label_02', 'splits', 'velodyne', 'velodyne_img', 
 # 'Flow', 'Inv_Flow', 'trackinglabel_02', 'kitti.json', 'shuffle data', 'kitti_train.json'
 #  'kitti_val.json']
-jsonfile_name='kitti_val_3class.json'
+# jsonfile_name='kitti_val_3class.json'
 # test a video and show the results
 # with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 # 	data=json.load(f)
 compute_time=0
 eval_data=[]
-out_path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st_test'
+if not os.path.exists('/home/ld/RepPoints/offset'):
+	os.mkdir('/home/ld/RepPoints/offset')
+out_path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 data=[]
@@ -146,5 +148,5 @@ for i,(scene) in enumerate(data):
 			"track_id":labels.tolist()},"flow_name":frame['flow_name'],"inv_flow_name":frame['inv_flow_name']}
 	eval_data.append(frame_data)
 	
-with open(os.path.join('./result/','retina_'+jsonfile_name),'w+',encoding='utf-8') as f:
-	data=json.dump(eval_data,f)
+# with open(os.path.join('./result/','retina_'+jsonfile_name),'w+',encoding='utf-8') as f:
+# 	data=json.dump(eval_data,f)

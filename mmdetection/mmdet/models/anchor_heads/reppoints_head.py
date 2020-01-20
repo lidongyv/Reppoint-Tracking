@@ -283,6 +283,7 @@ class RepPointsHead(nn.Module):
             self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
+        # print(cls_out.shape)
         # if dcn_offset.shape[-1]==156:
         #     self.init_offset=dcn_offset
         #     self.refine_offset=pts_out_refine- dcn_base_offset
@@ -291,7 +292,8 @@ class RepPointsHead(nn.Module):
 
     def forward(self, feats):
         #5 feature map
-        return multi_apply(self.forward_single, feats)
+        outs=multi_apply(self.forward_single, feats)
+        return outs
 
     def get_points(self, featmap_sizes, img_metas):
         """Get points according to feature map sizes.
@@ -584,7 +586,7 @@ class RepPointsHead(nn.Module):
             # if cls_score.size()[-1]!=78:
             #     continue
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            
+            # print(cls_score.shape)
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:#True

@@ -127,7 +127,7 @@ if __name__=='__main__':
 	# torch.Size([2, 256, 3, 10])
 	for i in range(6):
 		# i=5
-		path='/home/ld/RepPoints/offset/agg_st_stsn_dcnv2_mean_kernel_fix_rep_support_class3_trans/epoch14_fix_train/'+str(i)
+		path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st/'+str(i)
 		print('video:',i)
 		# path='/home/ld/RepPoints/offset_back/agg_st/2'
 		files=os.listdir(path)
@@ -172,7 +172,7 @@ if __name__=='__main__':
 		print(loc.shape)
 		if loc.shape[1]==3:
 			continue
-		loc=loc[np.where(loc[:,3]>0.3)]
+		loc=loc[np.where(loc[:,3]>0.1)]
 		
 		loc=loc.astype(np.int)
 		scale=[8,16,32,64,128]

@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     agg=dict(
-        type='STSN_fuse_c',
+        type='STSN_fuse_class',
         in_channels=512,
         out_channels=256,
         dcn=dict(
@@ -144,12 +144,13 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 30
+total_epochs = 40
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/final/fuse_c_10'
-load_from = '/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
+work_dir = '/home/ld/RepPoints/final/fuse_class'
+load_from = '/home/ld/RepPoints/final/fuse_class/epoch_14.pth'
+# load_from='/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None
 auto_resume = True

@@ -54,9 +54,9 @@ def plot_according_to_point(vis_attr, im, source_points, map_h, map_w, color=[25
 	for idx, cur_source_point in enumerate(source_points):
 		y = np.round((cur_source_point[0] + 0.5) * im.shape[0] / map_h).astype('i')
 		x = np.round((cur_source_point[1] + 0.5) * im.shape[1] / map_w).astype('i')
-
-		if x < 0 or y < 0 or x > im.shape[1]-1 or y > im.shape[0]-1:
-			continue
+		print(mask[idx])
+		# if x < 0 or y < 0 or x > im.shape[1]-1 or y > im.shape[0]-1:
+		# 	continue
 		y = min(y, im.shape[0] - vis_attr['plot_area'] - 1)
 		x = min(x, im.shape[1] - vis_attr['plot_area'] - 1)
 		y = max(y, vis_attr['plot_area'])
@@ -67,7 +67,7 @@ def plot_according_to_point(vis_attr, im, source_points, map_h, map_w, color=[25
 			)
 		else:
 			# color[0]=(color[0]*mask[idx]).astype(np.int)
-			print(mask[idx])
+			
 			if mask[idx]<0.1:
 				continue
 			im[y-plot_area:y+plot_area+1, x-plot_area:x+plot_area+1, :] = np.tile(
@@ -235,7 +235,7 @@ if __name__=='__main__':
 	# torch.Size([2, 256, 3, 10])
 	for i in range(6):
 		# i=5
-		path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st_test/epoch13support/'+str(i)
+		path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st/epoch54/'+str(i)
 		print('video:',i)
 		# path='/home/ld/RepPoints/offset_back/agg_st/2'
 		files=os.listdir(path)
