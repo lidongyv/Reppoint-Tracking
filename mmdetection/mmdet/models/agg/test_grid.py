@@ -1,0 +1,12 @@
+import torch
+input = torch.arange(5*7).view(1, 1, 5,7).float()
+print(input)
+x = torch.linspace(-1, 1, 5)
+y = torch.linspace(-1, 1, 7)
+meshx, meshy = torch.meshgrid((x, y))
+print(meshx)
+print(meshy)
+grid = torch.stack((meshy, meshx), 2)
+grid = grid.unsqueeze(0)
+output = torch.nn.functional.grid_sample(input, grid)
+print(output)

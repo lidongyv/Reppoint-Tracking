@@ -243,7 +243,9 @@ def eval_map(det_results,
     Returns:
         tuple: (mAP, [dict, dict, ...])
     """
+    # print(len(det_results),len(gt_bboxes),len(gt_labels))
     assert len(det_results) == len(gt_bboxes) == len(gt_labels)
+    
     if gt_ignore is not None:
         assert len(gt_ignore) == len(gt_labels)
         for i in range(len(gt_ignore)):

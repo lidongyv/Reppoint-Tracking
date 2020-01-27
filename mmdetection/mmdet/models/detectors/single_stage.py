@@ -34,9 +34,11 @@ class SingleStageDetector(BaseDetector):
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
         self.agg_check=agg
+        self.class_check=agg['dcn']['class_check']
+        self.index=agg['dcn']['index']
         if agg is not None:
             self.agg=builder.build_agg(agg)
-        self.index=index
+        
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
@@ -82,61 +84,23 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None):
+
         x = self.extract_feat(img)
-        outs = self.bbox_head(x)[0]
-        # print(len(outs))
-        with torch.no_grad():
-            class_score=[]
-            for i in range(len(outs)):
-                class_score.append(outs[i].detach())
-        class_score=tuple(class_score)
-        refer_det=class_score[0]
-        if self.agg_check:
-            # x,trans_loss=self.agg(x)
-            x,loss_check=self.agg(x,class_score)
-        if isinstance(x, tuple):
-            outs = self.bbox_head(x)
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-            losses = self.bbox_head.loss(
-                *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-            # return losses,trans_loss
-            return losses
-        else:
-            losses_all=[]
-            # print('list')
-            #[tuple(agg_output),tuple(refer_out),tuple(support1_out),tuple(support1_out)]
-            class_result=[class_score]
-            for i in range(len(x)):
-                outs = self.bbox_head(x[i])
-                if i>1:
-                    class_result.append(tuple(outs[0]))
-                loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-                losses = self.bbox_head.loss(
-                    *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-                losses_all.append(losses)
-            
+        x=self.agg(x)
 
-            # for i in range(len(outs)):
-            #     outs = self.bbox_head(x[i])[0]
-            #     class_score=[]
-            #     for j in range(2,len(x)):
-            #         class_score.append(outs[j].detach())
-            #     class_score=tuple(class_score)
-            #     class_result.append(class_score)
-            agg_feature=self.agg.fuse(x,class_result)
-            outs = self.bbox_head(agg_feature)
+        losses_all=[]
+        for i in range(len(x)):
+            outs = self.bbox_head(x[i])
             loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
             losses = self.bbox_head.loss(
-                *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+                *loss_inputs, gt_bboxes_ignore=None)
             losses_all.append(losses)
-            new_det=outs[0][0]
-            print('detection on refer',(refer_det>0.05).float().max(1)[0].sum().item(), \
-            'detection on agg',(new_det>0.05).float().max(1)[0].sum().item(), \
-            'addition detection',(new_det>0.05).float().max(1)[0].sum().item()- \
-                (refer_det>0.05).float().max(1)[0].sum().item())
-            return losses_all,loss_check
-
-
+        return losses_all
+        # outs = self.bbox_head(x)
+        # loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
+        # losses = self.bbox_head.loss(
+        #     *loss_inputs, gt_bboxes_ignore=None)
+        # return losses
     def simple_test(self, img, img_meta, rescale=False):
         print(img.shape)
         print('single test')
@@ -155,18 +119,6 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         if self.agg_check:
             x=self.agg.forward_test(x)
-        # agg_load=np.load('/home/ld/RepPoints/offset/agg_st_support/2/agg_f.npy')
-        # agg=torch.from_numpy(agg_load).to(img.device)
-        # print('agg check in single stage',(x[0]==agg).all())
-        # load=[]
-        # for i in range(len(x)):
-        #     # print(x[i].shape)
-        #     if i==0:
-        #         load.append(agg)
-        #     else:
-        #         load.append(x[i])
-        # x=tuple(load)
-        
         outs = self.bbox_head(x)
         index=self.index
         index=True
@@ -203,69 +155,28 @@ class SingleStageDetector(BaseDetector):
         # torch.Size([2, 256, 6, 20])
         # torch.Size([2, 256, 3, 10])
         x = self.extract_feat(img)
-        outs = self.bbox_head(x)[0]
-        # print(len(outs))
-        with torch.no_grad():
-            class_score=[]
-            for i in range(len(outs)):
-                class_score.append(outs[i].detach())
-        class_score=tuple(class_score)
-        if self.agg_check:
-            x=self.agg.forward_eval(x,class_score)
-        if isinstance(x, tuple):
-            
-            outs = self.bbox_head(x)
+        
+        x=self.agg.forward_eval(x)
+        out=[]
+        for i in range(len(x)):
+            outs = self.bbox_head(x[i])
+            # print(len(outs))
+            # print(len(outs[0]))
+            # print(outs[0][0].shape)
+            # exit()
             index=self.index
-            index=True
             bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
             bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-            if index:
-                box_loc=bbox_list[0][2]
-                bbox_list=[bbox_list[0][:2]]
+            # print(bbox_list[0][2])
+            # print(bbox_list[0][:2])
+            # # print(bbox_results)
+            # exit()
+            box_loc=bbox_list[0][2]
+            bbox_list=[bbox_list[0][:2]]
             bbox_results = [
                 bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
                 for det_bboxes, det_labels in bbox_list
             ]
-            if index:
-                return bbox_results[0],box_loc
-            else:
-                return bbox_results[0]
-        else:
-            out=[]
-            # length 12: out=[tuple(refer_out),tuple(agg_out)]+support_out
-            class_result=[class_score]
-            for i in range(len(x)):
-                outs = self.bbox_head(x[i])
-                if i>1:
-                    class_result.append(tuple(outs[0]))
-                index=self.index
-                index=True
-                bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-                bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-                if index:
-                    box_loc=bbox_list[0][2]
-                    bbox_list=[bbox_list[0][:2]]
-                bbox_results = [
-                    bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-                    for det_bboxes, det_labels in bbox_list
-                ]
-                if index:
-                    out.append([bbox_results[0],box_loc])
-                else:
-                    out.append(bbox_results[0])
-            agg_feature=self.agg.fuse(x,class_result)
-            outs = self.bbox_head(agg_feature)
-            bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-            bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-            if index:
-                box_loc=bbox_list[0][2]
-                bbox_list=[bbox_list[0][:2]]
-            bbox_results = [
-                bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-                for det_bboxes, det_labels in bbox_list
-            ]
-            if index:
-                out[-1]=[bbox_results[0],box_loc]
-            else:
-                out[-1]=bbox_results[0]
-            return out
+            out.append([bbox_results[0],box_loc])
+
+        return out

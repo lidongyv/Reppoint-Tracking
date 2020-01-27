@@ -25,11 +25,13 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     agg=dict(
-        type='STSN_fuse_class',
+        type='STSN_one',
         in_channels=512,
         out_channels=256,
         dcn=dict(
-            modulated=True,
+            class_check=False,
+            index=True,
+            modulated=False,
             deformable_groups=1,
             fallback_on_stride=False)),
     bbox_head=dict(
@@ -74,7 +76,7 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.1,
-    nms=dict(type='nms', iou_thr=0.3),
+    nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
 dataset_type = 'KittiDataset'
@@ -144,12 +146,12 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 40
+total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/final/fuse_class'
-load_from = '/home/ld/RepPoints/final/fuse_class/epoch_14.pth'
+work_dir = '/home/ld/RepPoints/debug/stsn_one_fuse_1_27_3'
+load_from = '/home/ld/RepPoints/debug/stsn_one_fuse_1_27_2/epoch_14.pth'
 # load_from='/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None

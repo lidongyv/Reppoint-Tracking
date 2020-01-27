@@ -60,7 +60,7 @@ for i,(frame) in enumerate(data):
 	#four value and one score
 	bboxes = np.vstack(bbox_result)
 	scores = bboxes[:, -1]
-	inds = scores > 0.5
+	inds = scores > 0.1
 	bboxes = bboxes[inds, :][:,:4]
 	
 	# draw bounding boxes

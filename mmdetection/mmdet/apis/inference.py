@@ -208,10 +208,11 @@ def inference_trajectory(model, img):
 def show_result(img,
                 result,
                 class_names,
-                score_thr=0.3,
+                score_thr=0.1,
                 wait_time=0,
                 show=True,
-                out_file=None):
+                out_file=None,
+                out=False):
     """Visualize the detection results on the image.
 
     Args:
@@ -251,15 +252,27 @@ def show_result(img,
         for i, bbox in enumerate(bbox_result)
     ]
     labels = np.concatenate(labels)
-    mmcv.imshow_det_bboxes(
-        img,
-        bboxes,
-        labels,
-        class_names=class_names,
-        score_thr=score_thr,
-        show=show,
-        wait_time=wait_time,
-        out_file=out_file)
+    if out:
+        draw=mmcv.imshow_det_bboxes(
+            img,
+            bboxes,
+            labels,
+            class_names=class_names,
+            score_thr=score_thr,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file,out=out)
+        return draw
+    else:
+        mmcv.imshow_det_bboxes(
+            img,
+            bboxes,
+            labels,
+            class_names=class_names,
+            score_thr=score_thr,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
     if not (show or out_file):
         return img
 

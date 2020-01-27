@@ -251,6 +251,7 @@ class RepPointsHead(nn.Module):
         return grid_yx, regressed_bbox
 
     def forward_single(self, x):
+
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -647,6 +648,8 @@ class RepPointsHead(nn.Module):
                     # print(torch.max(mlvl_scores[select[0][0]]))
                     # print(mlvl_index[select[0][0]].view(-1))
                     det_index.append(torch.cat([mlvl_index[select[0][0]].view(-1),torch.max(mlvl_scores[select[0][0]]).view(-1)]))
+                # print(det_index)
+                # exit()
                 if len(det_index)==0:
                     det_index.append(mlvl_index[0])
                 # exit()

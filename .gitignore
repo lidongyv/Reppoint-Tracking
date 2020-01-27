@@ -80,3 +80,5 @@ trained/
 work_dirs/
 code_back/
 *.ipynb
+
+*.pkl
