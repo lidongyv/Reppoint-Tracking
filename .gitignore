@@ -67,7 +67,6 @@ backgit/
 mmdetection_back/
 mmdetection_modify/
 data/
-debug/
 demo/
 final/
 fix_weight/
@@ -80,5 +79,8 @@ trained/
 work_dirs/
 code_back/
 *.ipynb
-
+*.pth
 *.pkl
+*.png
+*.jpg
+*.log
