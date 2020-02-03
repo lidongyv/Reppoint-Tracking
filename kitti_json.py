@@ -20,24 +20,35 @@ min=100
 # print(max,min)
 #8,1
 # CLASSES = ('Car', 'Van', 'Truck', 'Pedestrian', 'Cyclist', 'Tram', 'Misc', 'Person',)
-count=0
+classes = ['Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc']
+#train:   [18686, 1994, 1044, 2573, 167, 1257, 178, 261]
+# test:    [8614, 1307,    145,         8897,        509,           681,      417, 532]
+new_classes=['vehicle','person','cyclist']
+# train [20680, 2740, 1257]
+# test  [9921, 9406, 681]
+count=[0,0,0,0]
+train_count=[0,0,0,0,0,0,0,0]
 for i in range(len(data)):
-	# print(data[i])
-	# exit()
 	if len(data[i]['ann']['labels'])==0:
 		continue
 	labels=data[i]['ann']['labels']
 	for j in range(len(labels)):
-		if labels[j]==1 or labels[j]==2 or labels[j]==3 or labels[j]==6:
+		train_count[labels[j]-1]+=1
+		if labels[j]==1 or labels[j]==2:
 			labels[j]=1
-		if labels[j]==4 or labels[j]==8:
+			count[0]+=1
+		elif labels[j]==4 or labels[j]==5:
 			labels[j]=2
-		if labels[j]==5:
+			count[1]+=1
+		elif labels[j]==6:
 			labels[j]=3
-		if labels[j]==7:
-			count+=1
+			count[2]+=1
+		else:
+			labels[j]=0
+			count[3]+=1
 	data[i]['ann']['labels']=labels
 print(count)
+print(train_count)
 jsonfile_name='kitti_train_3class.json'
 with open(os.path.join(data_path,jsonfile_name),'w+',encoding='utf-8') as f:
 	data=json.dump(data,f)

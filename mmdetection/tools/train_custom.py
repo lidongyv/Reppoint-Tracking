@@ -122,9 +122,7 @@ def main():
 	if cfg.load_from:
 		checkpoint = load_checkpoint(model, cfg.load_from, map_location='cpu')
 		model.CLASSES = datasets[0].CLASSES
-	if cfg.load_from:
-		checkpoint = load_checkpoint(model, cfg.load_from, map_location='cpu')
-		model.CLASSES = datasets[0].CLASSES
+
 	if cfg.checkpoint_config is not None:
 		# save mmdet version, config file content and class names in
 		# checkpoints as meta data
@@ -147,10 +145,45 @@ def main():
 		model_load = model.module
 	optimizer_rep = obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.bbox_head.parameters()))
-	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
-							 dict(params=model_load.agg.parameters()))
+	# optimizer = obj_from_dict(cfg.optimizer, torch.optim,
+	# 						 dict(params=model_load.agg.parameters()))
 	optimizer_all=obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.parameters()))
+	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
+							 dict(params=list(model_load.bbox_head.conv11_offset.parameters())+ \
+								         list(model_load.bbox_head.conv11.parameters())+ \
+									 	 list(model_load.bbox_head.conv12_offset.parameters())+ \
+								         list(model_load.bbox_head.conv12.parameters())+ \
+									 	 list(model_load.bbox_head.conv13_offset.parameters())+ \
+								         list(model_load.bbox_head.conv13.parameters())+ \
+										 list(model_load.bbox_head.conv14_offset.parameters())+ \
+										 list(model_load.bbox_head.conv21_offset.parameters())+ \
+								         list(model_load.bbox_head.conv21.parameters())+ \
+									 	 list(model_load.bbox_head.conv22_offset.parameters())+ \
+								         list(model_load.bbox_head.conv22.parameters())+ \
+									 	 list(model_load.bbox_head.conv23_offset.parameters())+ \
+										 list(model_load.bbox_head.conv31_offset.parameters())+ \
+								         list(model_load.bbox_head.conv31.parameters())+ \
+									 	 list(model_load.bbox_head.conv32_offset.parameters())+ \
+								         list(model_load.bbox_head.conv32.parameters())+ \
+									 	 list(model_load.bbox_head.conv33_offset.parameters())+ \
+										 list(model_load.bbox_head.conv41_offset.parameters())+ \
+								         list(model_load.bbox_head.conv41.parameters())+ \
+									 	 list(model_load.bbox_head.conv42_offset.parameters())+ \
+										 list(model_load.bbox_head.conv51_offset.parameters())+ \
+								         list(model_load.bbox_head.conv51.parameters())+ \
+									 	 list(model_load.bbox_head.conv52_offset.parameters())+ \
+										 list(model_load.bbox_head.reg_weight1.parameters())+ \
+										 list(model_load.bbox_head.reg_weight2.parameters())+ \
+										 list(model_load.bbox_head.reg_weight3.parameters())+ \
+										 list(model_load.bbox_head.reg_weight4.parameters())+ \
+										 list(model_load.bbox_head.reg_weight5.parameters())+ \
+										 list(model_load.bbox_head.cls_weight1.parameters())+ \
+										 list(model_load.bbox_head.cls_weight2.parameters())+ \
+										 list(model_load.bbox_head.cls_weight3.parameters())+ \
+										 list(model_load.bbox_head.cls_weight4.parameters())+ \
+										 list(model_load.bbox_head.cls_weight5.parameters())
+									 ))
 	check_video=None
 	try:
 		start_epoch=checkpoint['epoch']+1
@@ -159,49 +192,49 @@ def main():
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='stsnone')
+	vis = visdom.Visdom(env='repstsnthree')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
 									ylabel='Loss of classification',
 									title='Loss of classification ',
 									legend=['Loss of classification']))
-	loss_cls_window2 = vis.line(X=torch.zeros((1,)).cpu(),
-						Y=torch.zeros((1)).cpu(),
-						opts=dict(xlabel='minibatches',
-									ylabel='Loss of classification2',
-									title='Loss of classification2 ',
-									legend=['Loss of classification2']))
-	loss_cls_window3 = vis.line(X=torch.zeros((1,)).cpu(),
-						Y=torch.zeros((1)).cpu(),
-						opts=dict(xlabel='minibatches',
-									ylabel='Loss of classification3',
-									title='Loss of classification3 ',
-									legend=['Loss of classification3']))
-	loss_cls_window4 = vis.line(X=torch.zeros((1,)).cpu(),
-						Y=torch.zeros((1)).cpu(),
-						opts=dict(xlabel='minibatches',
-									ylabel='Loss of classification4',
-									title='Loss of classification4 ',
-									legend=['Loss of classification4']))
-	# loss_init_window = vis.line(X=torch.zeros((1,)).cpu(),
+	# loss_cls_window2 = vis.line(X=torch.zeros((1,)).cpu(),
 	# 					Y=torch.zeros((1)).cpu(),
 	# 					opts=dict(xlabel='minibatches',
-	# 								ylabel='Loss of init reppoint',
-	# 								title='Loss of init reppoint',
-	# 								legend=['Loss of init reppoint']))
-	# loss_refine_window = vis.line(X=torch.zeros((1,)).cpu(),
+	# 								ylabel='Loss of classification2',
+	# 								title='Loss of classification2 ',
+	# 								legend=['Loss of classification2']))
+	# loss_cls_window3 = vis.line(X=torch.zeros((1,)).cpu(),
 	# 					Y=torch.zeros((1)).cpu(),
 	# 					opts=dict(xlabel='minibatches',
-	# 								ylabel='Loss of refine reppoint',
-	# 								title='Loss of refine reppoint',
-	# 								legend=['Loss of refine reppoint']))
-	# loss_total_window = vis.line(X=torch.zeros((1,)).cpu(),
+	# 								ylabel='Loss of classification3',
+	# 								title='Loss of classification3 ',
+	# 								legend=['Loss of classification3']))
+	# loss_cls_window4 = vis.line(X=torch.zeros((1,)).cpu(),
 	# 					Y=torch.zeros((1)).cpu(),
 	# 					opts=dict(xlabel='minibatches',
-	# 								ylabel='Loss all',
-	# 								title='Loss all',
-	# 								legend=['Loss all']))
+	# 								ylabel='Loss of classification4',
+	# 								title='Loss of classification4 ',
+	# 								legend=['Loss of classification4']))
+	loss_init_window = vis.line(X=torch.zeros((1,)).cpu(),
+						Y=torch.zeros((1)).cpu(),
+						opts=dict(xlabel='minibatches',
+									ylabel='Loss of init reppoint',
+									title='Loss of init reppoint',
+									legend=['Loss of init reppoint']))
+	loss_refine_window = vis.line(X=torch.zeros((1,)).cpu(),
+						Y=torch.zeros((1)).cpu(),
+						opts=dict(xlabel='minibatches',
+									ylabel='Loss of refine reppoint',
+									title='Loss of refine reppoint',
+									legend=['Loss of refine reppoint']))
+	loss_total_window = vis.line(X=torch.zeros((1,)).cpu(),
+						Y=torch.zeros((1)).cpu(),
+						opts=dict(xlabel='minibatches',
+									ylabel='Loss all',
+									title='Loss all',
+									legend=['Loss all']))
 	# loss_trans_window = vis.line(X=torch.zeros((1,)).cpu(),
 	# 					Y=torch.zeros((1)).cpu(),
 	# 					opts=dict(xlabel='minibatches',
@@ -249,105 +282,40 @@ def main():
 			# else:
 			# 	data=data0
 			losses=model(return_loss=True, **data)
-			# losses,loss_check=model(return_loss=True, **data)
-			# loss_check=loss_check.mean()
-			# print('loss_check',loss_check.item())
-			# print(losses)
-			if isinstance(losses, list):
-				
-				loss_all=[]
-				log=[]
-				for p in range(len(losses)):
-					# print(p)
-					# print(losses[p])
-					loss, log_var = parse_losses(losses[p])
-					loss_all.append(loss)
-					log.append(log_var)
-			else:
-				losses, log_vars = parse_losses(losses)
-			# if isinstance(losses, list):
-			# 	losses=loss_all[0]+0.5*loss_all[1]+0.5*loss_all[2]+0.5*loss_all[3]
-			# 	losses=losses/2.5
-			# print(loss_trans.shape)
-			# loss_trans=torch.mean(loss_trans)*0.1
-			# losses=losses+loss_trans
-			# if losses.item()>10:
-			#	 losses.backward(retain_graph=False)
-			#	 optimizer.zero_grad()
-			#	 continue
+			losses, log_vars = parse_losses(losses)
+			# losses.backward()
+			# optimizer_all.step()
 
-			if epoch<15:
-				losses=(loss_all[1]+loss_all[2]+loss_all[3]+loss_all[4])/4
+			if epoch<10:
 				losses.backward()
 				optimizer.step()
-				# optimizer_rep.step()
 			else:
-				losses=loss_all[0]+(loss_all[1]+loss_all[2]+loss_all[3]+loss_all[4])/4
 				losses.backward()
-				# optimizer.step()
-				# optimizer_rep.step()
 				optimizer_all.step()
-			log_vars=log[0]
-			print('refer')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])
-			log_vars=log[1]
 
-			vis.line(
-				X=torch.ones(1).cpu() *training_sample,
-				Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
-				win=loss_cls_window,
-				update='append')
-			# vis.line(
-			# 	X=torch.ones(1).cpu() * training_sample,
-			# 	Y=(log_vars['loss_pts_init']) * torch.ones(1).cpu(),
-			# 	win=loss_init_window,
-			# 	update='append')
-			# vis.line(
-			# 	X=torch.ones(1).cpu() * training_sample,
-			# 	Y=(log_vars['loss_pts_refine']) * torch.ones(1).cpu(),
-			# 	win=loss_refine_window,
-			# 	update='append')
-			# vis.line(
-			# 	X=torch.ones(1).cpu() * training_sample,
-			# 	Y=(losses).item() * torch.ones(1).cpu(),
-			# 	win=loss_total_window,
-			# 	update='append')
 			print('agg')
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
 					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
 						'loss_refine_box:',log_vars['loss_pts_refine'])
-			log_vars=log[2]
-			print('support1')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])
 			vis.line(
-				X=torch.ones(1).cpu() *training_sample,
-				Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
-				win=loss_cls_window2,
+			X=torch.ones(1).cpu() *training_sample,
+			Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
+			win=loss_cls_window,
+			update='append')
+			vis.line(
+				X=torch.ones(1).cpu() * training_sample,
+				Y=(log_vars['loss_pts_init']) * torch.ones(1).cpu(),
+				win=loss_init_window,
 				update='append')
-
-			log_vars=log[3]
-			print('support2')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])	 
 			vis.line(
-				X=torch.ones(1).cpu() *training_sample,
-				Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
-				win=loss_cls_window3,
+				X=torch.ones(1).cpu() * training_sample,
+				Y=(log_vars['loss_pts_refine']) * torch.ones(1).cpu(),
+				win=loss_refine_window,
 				update='append')
-			log_vars=log[4]
-			print('warp refer')
-			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
-					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'])	 
 			vis.line(
-				X=torch.ones(1).cpu() *training_sample,
-				Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
-				win=loss_cls_window4,
+				X=torch.ones(1).cpu() * training_sample,
+				Y=(losses).item() * torch.ones(1).cpu(),
+				win=loss_total_window,
 				update='append')
 			training_sample+=1
 		epoch+=1

@@ -36,8 +36,9 @@ for i in range(len(data)):
 	flow=np.array(readFlow(flow_name))
 	#print(flow)
 	print(os.path.join(data_path,data[i-1]['flow_name']))
-	exit()
+
 	color=flow_to_color(flow,convert_to_bgr=True)
+	exit()
 	print(os.path.join('/backdata01/KITTI/kitti/tracking/training/inv_flow_vis',info['video_id'],info['filename']))
 	cv2.imwrite(os.path.join(outpath,info['filename'].split('/')[-1]),color)
 	# plt.imshow(color)

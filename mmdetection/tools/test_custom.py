@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
-checkpoint_file='/home/ld/RepPoints/debug/stsn_one_fuse_1_27_2/epoch_38.pth'
+checkpoint_file='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/epoch_27.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -72,43 +72,31 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
 support_count=2
-out_name=['refer','refer_trans','agg','agg_refer']
-
-for i in range(support_count):
-	out_name.append('frame_'+str(i+1))
-out_path='/home/ld/RepPoints/debug/stsn_one_fuse_1_27_2/epoch38_thres0.1_nms0.5_with2_val_offset'
+out_name='agg'
+out_path='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/epoch_27_thres0.1_nms0.3_with2_refine'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
-	for i in range(len(out_name)):
-		os.mkdir(os.path.join(out_path,out_name[i]))
+	os.mkdir(os.path.join(out_path,out_name))
 results=[]
 video_length=0
 video_name_check=None
 result_record=[]
-for i in range(len(out_name)):
-	result_record.append([])
+
 eval_data=[]
-for i in range(len(out_name)):
-	eval_data.append([])
+
 loc_data=[]
-for i in range(len(out_name)):
-	loc_data.append([])
+
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
-offset_data=[]
-for i in range(support_count):
-	offset_data.append([])
-offset_data=[]
-for i in range(support_count):
-	offset_data.append([])
+
 
 # load and test
+out_path='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/result/epoch_39_thres0.1_nms0.5_with2_refine_offset/refer'
+result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
+print('evaluating result of support', )
 
-# result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
-# print('evaluating result of support', )
-# print(result_record)
-# kitti_eval(result_record, dataset)
-# exit()
+kitti_eval(result_record, dataset)
+exit()
 
 
 # build the model from a config file and a checkpoint file
@@ -147,49 +135,35 @@ for i,(frame) in enumerate(data):
 			img_list.append(os.path.join(data_path,data[i]['filename']))
 
 	result = inference_trackor(model, img_list)
-	offset=model.agg.offset
-	for j in range(len(out_name)):
 
-		bbox_result=result[j][0]
-		loc_result=result[j][1]
-		result_record[j].append(bbox_result)
-		loc_data[j].append(loc_result)
-		loc_result=loc_result.long()
-		#four value and one score
-		bboxes = np.vstack(bbox_result)
-		scores = bboxes[:, -1]
-		inds = scores > 0
-		scores=bboxes[inds, :][:,4:]
-		bboxes = bboxes[inds, :][:,:4]
+	bbox_result=result[0]
+	loc_result=result[1]
+	result_record.append(bbox_result)
+	loc_data.append(loc_result)
+	loc_result=loc_result.long()
+	#four value and one score
+	bboxes = np.vstack(bbox_result)
+	scores = bboxes[:, -1]
+	inds = scores > 0
+	scores=bboxes[inds, :][:,4:]
+	bboxes = bboxes[inds, :][:,:4]
 
-		labels = [
-			np.full(bbox.shape[0], i, dtype=np.int32)
-			for i, bbox in enumerate(bbox_result)
-		]
-		labels = np.concatenate(labels)
-		labels = labels[inds]
-		frame_data={"video_id":frame['video_id'],"filename":os.path.join(frame['filename']), \
-			"ann":{"bboxes":bboxes.tolist(),"labels":labels.tolist(), \
-				"track_id":labels.tolist(),'score':scores.tolist()}}
-		eval_data[j].append(frame_data)
+	labels = [
+		np.full(bbox.shape[0], i, dtype=np.int32)
+		for i, bbox in enumerate(bbox_result)
+	]
+	labels = np.concatenate(labels)
+	labels = labels[inds]
+	frame_data={"video_id":frame['video_id'],"filename":os.path.join(frame['filename']), \
+		"ann":{"bboxes":bboxes.tolist(),"labels":labels.tolist(), \
+			"track_id":labels.tolist(),'score':scores.tolist()}}
+	eval_data.append(frame_data)
 
-		offset_loc=[]
-		mask_loc=[]
-		if j>=4:
-			offset=model.agg.offset[j-4]
-			for m in range(len(loc_result)):
-				offset_loc.append(offset[scale[str(loc_result[m,2].item())]][0,:,loc_result[m,1]//loc_result[m,2],loc_result[m,0]//loc_result[m,2]].data.cpu())
-			offset_data[j-4].append(offset_loc)
-for i in range(len(out_name)):
-	mmcv.dump(result_record[i], os.path.join(out_path,out_name[i],'det_result.pkl'))
-	mmcv.dump(loc_data[i], os.path.join(out_path,out_name[i],'loc_result.pkl'))
-	# mmcv.dump(eval_data[i], os.path.join(out_path,out_name[i],'track.pkl'))
-	# if i>1:
-	# 	mmcv.dump(offset_data[i-2], os.path.join(out_path,out_name[i],'offset.pkl'))
-for i in range(support_count):
-	
-	mmcv.dump(offset_data[i-2], os.path.join(out_path,out_name[i+4],'offset.pkl'))
-for i in range(len(out_name)):
-	print('evaluating result of ', out_name[i])
-	kitti_eval(result_record[i], dataset)
+
+mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
+mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
+
+
+print('evaluating result of ', out_name)
+kitti_eval(result_record, dataset)
 

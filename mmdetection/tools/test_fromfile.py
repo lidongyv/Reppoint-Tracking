@@ -264,7 +264,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
+config_file ='/home/hrb/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -285,7 +285,7 @@ out_name=['refer','agg']
 for i in range(10):
 	out_name.append('frame_'+str(i+1))
 # out_path='/home/ld/RepPoints/analyze/fuse_result/epoch13 thres0.1'
-out_path='/home/ld/RepPoints/final/fuse_c_result/epoch9_thres0.1_nms0.3_with2'
+out_path='/home/hrb/RepPoints/final/fuse_c_result/epoch9_thres0.1_nms0.3_with2'
 results=[]
 video_length=0
 video_name_check=None
@@ -412,23 +412,23 @@ for i in range(num_classes):
 			img=os.path.join(data_path,data[j]['filename'])
 			if not os.path.exists(os.path.join(os.path.join(out_path),'baseline',video_name)):
 				os.mkdir(os.path.join(os.path.join(out_path),'baseline',video_name))
-			print(img_name)
-			imshow_det_bboxes(
-					img,
-					miss_gound,
-					np.ones(miss_gound.shape[0]).astype(np.int)*i,
-					class_names=classes,
-					show=False,
-					out_file=os.path.join(os.path.join(out_path),'baseline',video_name,img_name.split('/')[-1]))
-		if ra_index.astype(np.float).sum()>0:
-			miss_refer_count+=ra_index.astype(np.float).sum()
-			img_name=data[j]['filename']
-			video_name=data[j]['video_id']
-			img=os.path.join(data_path,data[j]['filename'])
-			if not os.path.exists(os.path.join(os.path.join(out_path),'refer_loss',video_name)):
-				os.mkdir(os.path.join(os.path.join(out_path),'refer_loss',video_name))
-			print(img_name,ra_index.astype(np.float).sum())
+			# print(img_name)
 			# imshow_det_bboxes(
+			# 		img,
+			# 		miss_gound,
+			# 		np.ones(miss_gound.shape[0]).astype(np.int)*i,
+			# 		class_names=classes,
+			# 		show=False,
+			# 		out_file=os.path.join(os.path.join(out_path),'baseline',video_name,img_name.split('/')[-1]))
+		# if ra_index.astype(np.float).sum()>0:
+		# 	miss_refer_count+=ra_index.astype(np.float).sum()
+		# 	img_name=data[j]['filename']
+		# 	video_name=data[j]['video_id']
+		# 	img=os.path.join(data_path,data[j]['filename'])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path),'refer_loss',video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path),'refer_loss',video_name))
+		# 	print(img_name,ra_index.astype(np.float).sum())
+		# 	# imshow_det_bboxes(
 			# 		img,
 			# 		tp_refer,
 			# 		np.ones(tp_refer.shape[0]).astype(np.int)*i,
@@ -443,28 +443,28 @@ for i in range(num_classes):
 			# 		show=True,
 			# 		out_file=os.path.join(os.path.join(out_path),video_name,img_name.split('/')[-1]))
 
-			imshow_det_bboxes(
-					img,
-					miss_refer,
-					np.ones(miss_refer.shape[0]).astype(np.int)*i,
-					class_names=classes,
-					show=False,
-					out_file=os.path.join(os.path.join(out_path),'refer_loss',video_name,img_name.split('/')[-1]))
-		if ar_index.astype(np.float).sum()>0:
-			miss_agg_count+=ar_index.astype(np.float).sum()
-			img_name=data[j]['filename']
-			video_name=data[j]['video_id']
-			img=os.path.join(data_path,data[j]['filename'])
-			if not os.path.exists(os.path.join(os.path.join(out_path),'agg_loss',video_name)):
-				os.mkdir(os.path.join(os.path.join(out_path),'agg_loss',video_name))
-			print(img_name,ar_index.astype(np.float).sum())
-			imshow_det_bboxes(
-					img,
-					miss_agg,
-					np.ones(miss_agg.shape[0]).astype(np.int)*i,
-					class_names=classes,
-					show=False,
-					out_file=os.path.join(os.path.join(out_path),'agg_loss',video_name,img_name.split('/')[-1]))
+			# imshow_det_bboxes(
+			# 		img,
+			# 		miss_refer,
+			# 		np.ones(miss_refer.shape[0]).astype(np.int)*i,
+			# 		class_names=classes,
+			# 		show=False,
+			# 		out_file=os.path.join(os.path.join(out_path),'refer_loss',video_name,img_name.split('/')[-1]))
+		# if ar_index.astype(np.float).sum()>0:
+		# 	miss_agg_count+=ar_index.astype(np.float).sum()
+		# 	img_name=data[j]['filename']
+		# 	video_name=data[j]['video_id']
+		# 	img=os.path.join(data_path,data[j]['filename'])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path),'agg_loss',video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path),'agg_loss',video_name))
+		# 	print(img_name,ar_index.astype(np.float).sum())
+		# 	imshow_det_bboxes(
+		# 			img,
+		# 			miss_agg,
+		# 			np.ones(miss_agg.shape[0]).astype(np.int)*i,
+		# 			class_names=classes,
+		# 			show=False,
+		# 			out_file=os.path.join(os.path.join(out_path),'agg_loss',video_name,img_name.split('/')[-1]))
 			# exit()
 		# print(gbox,rbox,abox)
 	miss_refer_counts.append(miss_refer_count)

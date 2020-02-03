@@ -284,7 +284,7 @@ class RepPointsHead(nn.Module):
             self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
-        # print(cls_out.shape)
+        print(cls_out.shape)
         # if dcn_offset.shape[-1]==156:
         #     self.init_offset=dcn_offset
         #     self.refine_offset=pts_out_refine- dcn_base_offset
@@ -656,3 +656,4 @@ class RepPointsHead(nn.Module):
                 return det_bboxes, det_labels,torch.stack(det_index,dim=0)
         else:
             return mlvl_bboxes, mlvl_scores
+

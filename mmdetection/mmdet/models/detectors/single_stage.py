@@ -36,9 +36,7 @@ class SingleStageDetector(BaseDetector):
         self.agg_check=agg
         self.class_check=agg['dcn']['class_check']
         self.index=agg['dcn']['index']
-        if agg is not None:
-            self.agg=builder.build_agg(agg)
-        
+
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
@@ -86,16 +84,12 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes_ignore=None):
 
         x = self.extract_feat(img)
-        x=self.agg(x)
+        outs = self.bbox_head(x)
+        loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
+        losses = self.bbox_head.loss(
+            *loss_inputs, gt_bboxes_ignore=None)
 
-        losses_all=[]
-        for i in range(len(x)):
-            outs = self.bbox_head(x[i])
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-            losses = self.bbox_head.loss(
-                *loss_inputs, gt_bboxes_ignore=None)
-            losses_all.append(losses)
-        return losses_all
+        return losses
         # outs = self.bbox_head(x)
         # loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         # losses = self.bbox_head.loss(
@@ -156,27 +150,23 @@ class SingleStageDetector(BaseDetector):
         # torch.Size([2, 256, 3, 10])
         x = self.extract_feat(img)
         
-        x=self.agg.forward_eval(x)
-        out=[]
-        for i in range(len(x)):
-            outs = self.bbox_head(x[i])
-            # print(len(outs))
-            # print(len(outs[0]))
-            # print(outs[0][0].shape)
-            # exit()
-            index=self.index
-            bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-            bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-            # print(bbox_list[0][2])
-            # print(bbox_list[0][:2])
-            # # print(bbox_results)
-            # exit()
-            box_loc=bbox_list[0][2]
-            bbox_list=[bbox_list[0][:2]]
-            bbox_results = [
-                bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-                for det_bboxes, det_labels in bbox_list
-            ]
-            out.append([bbox_results[0],box_loc])
 
-        return out
+        outs = self.bbox_head(x)
+        # print(len(outs))
+        # print(len(outs[0]))
+        # print(outs[0][0].shape)
+        # exit()
+        index=True
+        bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
+        bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
+        # print(bbox_list[0][2])
+        # print(bbox_list[0][:2])
+        # # print(bbox_results)
+        # exit()
+        box_loc=bbox_list[0][2]
+        bbox_list=[bbox_list[0][:2]]
+        bbox_results = [
+            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
+            for det_bboxes, det_labels in bbox_list
+        ]
+        return bbox_results[0],box_loc
