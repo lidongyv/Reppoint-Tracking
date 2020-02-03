@@ -1,8 +1,10 @@
 from __future__ import division
 import argparse
 import os
+# import tqdm
 import random
 import torch
+# #from IPython import embed
 from collections import OrderedDict
 import mmcv
 from mmcv import Config
@@ -143,45 +145,10 @@ def main():
 		model_load = model.module
 	optimizer_rep = obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.bbox_head.parameters()))
-	# optimizer = obj_from_dict(cfg.optimizer, torch.optim,
-	# 						 dict(params=model_load.agg.parameters()))
+	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
+							 dict(params=model_load.agg.parameters()))
 	optimizer_all=obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.parameters()))
-	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
-							 dict(params=list(model_load.bbox_head.conv11_offset.parameters())+ \
-								         list(model_load.bbox_head.conv11.parameters())+ \
-									 	 list(model_load.bbox_head.conv12_offset.parameters())+ \
-								         list(model_load.bbox_head.conv12.parameters())+ \
-									 	 list(model_load.bbox_head.conv13_offset.parameters())+ \
-								         list(model_load.bbox_head.conv13.parameters())+ \
-										 list(model_load.bbox_head.conv14_offset.parameters())+ \
-										 list(model_load.bbox_head.conv21_offset.parameters())+ \
-								         list(model_load.bbox_head.conv21.parameters())+ \
-									 	 list(model_load.bbox_head.conv22_offset.parameters())+ \
-								         list(model_load.bbox_head.conv22.parameters())+ \
-									 	 list(model_load.bbox_head.conv23_offset.parameters())+ \
-										 list(model_load.bbox_head.conv31_offset.parameters())+ \
-								         list(model_load.bbox_head.conv31.parameters())+ \
-									 	 list(model_load.bbox_head.conv32_offset.parameters())+ \
-								         list(model_load.bbox_head.conv32.parameters())+ \
-									 	 list(model_load.bbox_head.conv33_offset.parameters())+ \
-										 list(model_load.bbox_head.conv41_offset.parameters())+ \
-								         list(model_load.bbox_head.conv41.parameters())+ \
-									 	 list(model_load.bbox_head.conv42_offset.parameters())+ \
-										 list(model_load.bbox_head.conv51_offset.parameters())+ \
-								         list(model_load.bbox_head.conv51.parameters())+ \
-									 	 list(model_load.bbox_head.conv52_offset.parameters())+ \
-										 list(model_load.bbox_head.reg_weight1.parameters())+ \
-										 list(model_load.bbox_head.reg_weight2.parameters())+ \
-										 list(model_load.bbox_head.reg_weight3.parameters())+ \
-										 list(model_load.bbox_head.reg_weight4.parameters())+ \
-										 list(model_load.bbox_head.reg_weight5.parameters())+ \
-										 list(model_load.bbox_head.cls_weight1.parameters())+ \
-										 list(model_load.bbox_head.cls_weight2.parameters())+ \
-										 list(model_load.bbox_head.cls_weight3.parameters())+ \
-										 list(model_load.bbox_head.cls_weight4.parameters())+ \
-										 list(model_load.bbox_head.cls_weight5.parameters())
-									 ))
 	check_video=None
 	try:
 		start_epoch=checkpoint['epoch']+1
@@ -190,7 +157,7 @@ def main():
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='repstsnthree')
+	vis = visdom.Visdom(env='onlyagg')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -281,15 +248,15 @@ def main():
 			# 	data=data0
 			losses=model(return_loss=True, **data)
 			losses, log_vars = parse_losses(losses)
-			# losses.backward()
-			# optimizer_all.step()
+			losses.backward()
+			optimizer_all.step()
 
-			if epoch<10:
-				losses.backward()
-				optimizer.step()
-			else:
-				losses.backward()
-				optimizer_all.step()
+			# if epoch<15:
+			# 	losses.backward()
+			# 	optimizer.step()
+			# else:
+			# 	losses.backward()
+			# 	optimizer_all.step()
 
 			print('agg')
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \

@@ -109,8 +109,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
-    workers_per_gpu=8,
+    imgs_per_gpu=10,
+    workers_per_gpu=10,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'kitti_train_3class.json',
@@ -127,7 +127,7 @@ data = dict(
         img_prefix=data_root ,
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -150,9 +150,11 @@ total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/debug/stsn_one_fuse_1_27_3'
-load_from = '/home/ld/RepPoints/debug/stsn_one_fuse_1_27_2/epoch_14.pth'
-# load_from='/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
+work_dir = '/home/ld/RepPoints/ld/retrain_reppoint'
+
+# load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
+# load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
+load_from='/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None
 auto_resume = True

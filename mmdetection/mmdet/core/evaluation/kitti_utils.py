@@ -2,8 +2,8 @@ import itertools
 
 import mmcv
 import numpy as np
-from pycocotools.kitti import COCO
-from pycocotools.kittieval import COCOeval
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 from terminaltables import AsciiTable
 
 from .recall import eval_recalls

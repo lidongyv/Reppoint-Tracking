@@ -30,7 +30,7 @@ def parse_losses(losses):
     log_vars['loss'] = loss
     for name in log_vars:
         log_vars[name] = log_vars[name].item()
-
+        print(name,log_vars[name])
     return loss, log_vars
 
 
