@@ -127,7 +127,7 @@ data = dict(
         img_prefix=data_root ,
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -150,11 +150,11 @@ total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld/retrain_reppoint'
-
+work_dir = '/home/ld/RepPoints/ld_result/stsn_3warp_from_reppoint'
+load_from='/home/ld/RepPoints/ld_result/retrain_reppoint/epoch_30.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
-load_from='/home/ld/RepPoints/work_dir/reppoints_moment_r101_dcn_fpn_kitti_mt_class3.pth'
+# load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'
 # load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
 resume_from = None
 auto_resume = True

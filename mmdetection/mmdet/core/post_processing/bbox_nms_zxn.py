@@ -33,8 +33,33 @@ def multiclass_nms(multi_bboxes,
     nms_cfg_ = nms_cfg.copy()
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = getattr(nms_wrapper, nms_type)
+
+    # -------------------------zxn------------------------------
+    # method1 argmax for each bbox to select one class for nms
+    max_score = multi_scores.max(1)[0]
+    max_index = multi_scores.max(1)[1]
+    cls_inds = multi_scores[:, i] > score_thr
+    # if not cls_inds.any():
+    #     continue
+    if multi_bboxes.shape[1] == 4:
+        _bboxes = multi_bboxes[cls_inds, :]
+    else:
+        _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
+    _scores = max_score[cls_inds]
+    if score_factors is not None:
+        _scores *= score_factors[cls_inds]
+    cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
+    cls_dets_later, cls_dets_later_index = nms_op(cls_dets, **nms_cfg_)
+    cls_labels = multi_bboxes.new_full((cls_dets.shape[0],),
+                                       i - 1,
+                                       dtype=torch.long)
+
+    multi_scores[:, max_index]
+    multi_bboxes.shape[1]
+
+    # -------------------------zxn------------------------------
     for i in range(1, num_classes):
-	
+
         cls_inds = multi_scores[:, i] > score_thr
         if not cls_inds.any():
             continue
@@ -53,6 +78,11 @@ def multiclass_nms(multi_bboxes,
                                            dtype=torch.long)
         bboxes.append(cls_dets)
         labels.append(cls_labels)
+        print('30 debug')
+        from IPython import embed
+        embed()
+
+    #
     if bboxes:
         bboxes = torch.cat(bboxes)
         labels = torch.cat(labels)

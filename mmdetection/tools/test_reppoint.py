@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_8.pth'
+config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_mt.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/retrain_reppoint/epoch_30.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -72,8 +72,8 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
 support_count=2
-out_name='agg'
-out_path='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_8_thres0.1_nms0.5_with2'
+out_name='refer'
+out_path='/home/ld/RepPoints/ld_result/retrain_reppoint/epoch_30_thres0.1_nms0.3'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	os.mkdir(os.path.join(out_path,out_name))
@@ -119,20 +119,7 @@ for i,(frame) in enumerate(data):
 	img_name=frame['filename']
 	# img = mmcv.imread(os.path.join(data_path,img_name))
 	img=os.path.join(data_path,img_name)
-	img_list=[img]
-
-
-	if data[i-2]['video_id']==video_name:
-		img_list.append(os.path.join(data_path,data[i-2]['filename']))
-	else:
-		img_list.append(os.path.join(data_path,data[i]['filename']))
-	if i+2>=len(data):
-		img_list.append(os.path.join(data_path,data[i]['filename']))
-	else:
-		if data[i+2]['video_id']==video_name:
-			img_list.append(os.path.join(data_path,data[i+2]['filename']))
-		else:
-			img_list.append(os.path.join(data_path,data[i]['filename']))
+	img_list=img
 	result = inference_trackor(model, img_list)
 
 	bbox_result=result[0]

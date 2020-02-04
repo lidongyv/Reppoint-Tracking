@@ -192,7 +192,7 @@ def main():
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='stsnend')
+	vis = visdom.Visdom(env='repstsnthree')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -283,15 +283,15 @@ def main():
 			# 	data=data0
 			losses=model(return_loss=True, **data)
 			losses, log_vars = parse_losses(losses)
-			losses.backward()
-			optimizer_all.step()
+			# losses.backward()
+			# optimizer_all.step()
 
-			# if epoch<10:
-			# 	losses.backward()
-			# 	optimizer.step()
-			# else:
-			# 	losses.backward()
-			# 	optimizer_all.step()
+			if epoch<10:
+				losses.backward()
+				optimizer.step()
+			else:
+				losses.backward()
+				optimizer_all.step()
 
 			print('agg')
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \

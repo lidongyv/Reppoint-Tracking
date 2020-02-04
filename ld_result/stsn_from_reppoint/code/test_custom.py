@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_8.pth'
+checkpoint_file='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/epoch_39.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -73,7 +73,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='agg'
-out_path='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_8_thres0.1_nms0.5_with2'
+out_path='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/epoch_39_thres0.1_nms0.5_with2_refine_offset'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	os.mkdir(os.path.join(out_path,out_name))
@@ -85,16 +85,17 @@ result_record=[]
 eval_data=[]
 
 loc_data=[]
-
+stsn_offsets=[]
+rep_offsets=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
 
-# load and test
-
+# # load and test
+# out_path='/home/ld/RepPoints/debug/stsn_one_fuse_1_27_2/epoch14_thres0.1_nms0.5_with2_val/refer'
 # result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
 # print('evaluating result of support', )
-# print(result_record)
+
 # kitti_eval(result_record, dataset)
 # exit()
 
@@ -133,8 +134,20 @@ for i,(frame) in enumerate(data):
 			img_list.append(os.path.join(data_path,data[i+2]['filename']))
 		else:
 			img_list.append(os.path.join(data_path,data[i]['filename']))
-	result = inference_trackor(model, img_list)
 
+	result = inference_trackor(model, img_list)
+	stsn_offset=model.bbox_head.stsn_offset
+	# print(len(stsn_offset))
+	for m in range(len(stsn_offset)):
+		# print(len(stsn_offset[m]))
+		for n in range(len(stsn_offset[m])):
+			# print(stsn_offset[m][n].shape)
+			stsn_offset[m][n]=stsn_offset[m][n].data.cpu().numpy()
+	stsn_offsets.append(stsn_offset)
+	rep_offset=model.bbox_head.rep_offset
+	for m in range(len(rep_offset)):
+		rep_offset[m]=rep_offset[m].data.cpu().numpy()
+	rep_offsets.append(rep_offset)
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
@@ -157,11 +170,13 @@ for i,(frame) in enumerate(data):
 		"ann":{"bboxes":bboxes.tolist(),"labels":labels.tolist(), \
 			"track_id":labels.tolist(),'score':scores.tolist()}}
 	eval_data.append(frame_data)
-
+	# if i>3:
+	# 	break
 
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
-
+mmcv.dump(stsn_offsets, os.path.join(out_path,out_name,'stsn_offset.pkl'))
+mmcv.dump(rep_offsets, os.path.join(out_path,out_name,'rep_offsets.pkl'))
 
 print('evaluating result of ', out_name)
 kitti_eval(result_record, dataset)

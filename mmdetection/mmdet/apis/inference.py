@@ -171,6 +171,7 @@ def inference_trackor(model, img):
         data = dict(img=img)
         data = test_pipeline(data)
         data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
