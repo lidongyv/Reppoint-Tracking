@@ -126,6 +126,7 @@ class Resize(object):
     def _resize_bboxes(self, results):
         img_shape = results['img_shape']
         for key in results.get('bbox_fields', []):
+            # print(key,results[key])
             bboxes = results[key] * results['scale_factor']
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)

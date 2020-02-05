@@ -307,6 +307,8 @@ for i in range(len(dataset)):
 	ann = dataset.get_ann_info(i)
 	bboxes = ann['bboxes']
 	labels = ann['labels']
+	print(bboxes,data[i]['ann']['bboxes'])
+	exit()
 	# if 3 in labels:
 	# 	print(labels)
 	# 	count+=1

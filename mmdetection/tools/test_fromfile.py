@@ -412,14 +412,14 @@ for i in range(num_classes):
 			img=os.path.join(data_path,data[j]['filename'])
 			if not os.path.exists(os.path.join(os.path.join(out_path),'baseline',video_name)):
 				os.mkdir(os.path.join(os.path.join(out_path),'baseline',video_name))
-			# print(img_name)
-			# imshow_det_bboxes(
-			# 		img,
-			# 		miss_gound,
-			# 		np.ones(miss_gound.shape[0]).astype(np.int)*i,
-			# 		class_names=classes,
-			# 		show=False,
-			# 		out_file=os.path.join(os.path.join(out_path),'baseline',video_name,img_name.split('/')[-1]))
+			print(img_name)
+			imshow_det_bboxes(
+					img,
+					miss_gound,
+					np.ones(miss_gound.shape[0]).astype(np.int)*i,
+					class_names=classes,
+					show=False,
+					out_file=os.path.join(os.path.join(out_path),'baseline',video_name,img_name.split('/')[-1]))
 		# if ra_index.astype(np.float).sum()>0:
 		# 	miss_refer_count+=ra_index.astype(np.float).sum()
 		# 	img_name=data[j]['filename']

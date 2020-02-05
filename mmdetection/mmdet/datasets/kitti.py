@@ -5,8 +5,8 @@ from pycocotools.coco import COCO
 @DATASETS.register_module
 class KittiDataset(CustomDataset):
     # CLASSES = ('Car', 'Van', 'Truck', 'Pedestrian', 'Cyclist', 'Tram', 'Misc', 'Person',)
-    # CLASSES = ('Vehicle','Pedestrian','Cyclist')
-    CLASSES = ('Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc')
+    CLASSES = ('Vehicle','Person','Cyclist')
+    # CLASSES = ('Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc')
     def __init__(self, **kwargs):
         super(KittiDataset, self).__init__(**kwargs)
         self.coco = COCO()

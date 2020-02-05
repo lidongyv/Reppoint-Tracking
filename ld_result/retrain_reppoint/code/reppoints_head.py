@@ -285,7 +285,6 @@ class RepPointsHead(nn.Module):
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
         # print(cls_out.shape)
-        print("ooooooooooooooooooooooookkkkkkkkkkkkkkkkkkkkk")
         # if dcn_offset.shape[-1]==156:
         #     self.init_offset=dcn_offset
         #     self.refine_offset=pts_out_refine- dcn_base_offset
