@@ -1,3 +1,6 @@
 {
-	"python.pythonPath": "/home/ld/anaconda3/envs/mmlab/bin/python"
+	"python.pythonPath": "/home/ld/anaconda3/envs/mmlab/bin/python",
+	"fileheader.LastModifiedBy": "lidong yu",
+	"fileheader.Author": "lidong yu",
+	"fileheader.tpl": " # -*- coding: utf-8 -*-  \\n #@Author: {author}  \\n #@Date: {createTime} \\n #@Last Modified by: {lastModifiedBy} \\n #@Last Modified time: {updateTime}\\n"
 }

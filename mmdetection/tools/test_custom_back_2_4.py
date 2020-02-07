@@ -30,6 +30,8 @@ from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.core import eval_map
 import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 def kitti_eval(det_results, dataset, iou_thr=0.5):
 	gt_bboxes = []
 	gt_labels = []
@@ -91,12 +93,12 @@ scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
 
 # load and test
-out_path='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/result/epoch_39_thres0.1_nms0.5_with2_refine_offset/refer'
-result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
-print('evaluating result of support', )
+# out_path='/home/ld/RepPoints/debug/reppoint_stsn_warp_three_trainsep/result/epoch_39_thres0.1_nms0.5_with2_refine_offset/refer'
+# result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
+# print('evaluating result of support', )
 
-kitti_eval(result_record, dataset)
-exit()
+# kitti_eval(result_record, dataset)
+# exit()
 
 
 # build the model from a config file and a checkpoint file

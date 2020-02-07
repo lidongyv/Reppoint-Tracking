@@ -92,7 +92,7 @@ def kitti_classes():
     #     'Car', 'Van', 'Truck', 'Pedestrian', 'Cyclist', 'Tram', 'Misc', 'Person'
     # ]
     return [
-        'Vehicle','Pedestrian','Cyclist'
+        'Car','Person','Cyclist'
     ]
 dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],

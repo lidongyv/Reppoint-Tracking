@@ -96,23 +96,10 @@ class SingleStageDetector(BaseDetector):
         #     *loss_inputs, gt_bboxes_ignore=None)
         # return losses
     def simple_test(self, img, img_meta, rescale=False):
-        print(img.shape)
+
         print('single test')
-        if img.shape[1]>3:
-            n=img.shape[1]//3
-            img=img.view(n,3,img.shape[2],img.shape[3])
-            # print(((img[0]==img[1]).sum().float()/3)/(img.shape[-1]*img.shape[-2]))
-            #0.1864
-        # print(img.shape)
-        
-        # torch.Size([2, 256, 48, 156])
-        # torch.Size([2, 256, 24, 78])
-        # torch.Size([2, 256, 12, 39])
-        # torch.Size([2, 256, 6, 20])
-        # torch.Size([2, 256, 3, 10])
+
         x = self.extract_feat(img)
-        if self.agg_check:
-            x=self.agg.forward_test(x)
         outs = self.bbox_head(x)
         index=self.index
         index=True
@@ -165,8 +152,10 @@ class SingleStageDetector(BaseDetector):
         # exit()
         box_loc=bbox_list[0][2]
         bbox_list=[bbox_list[0][:2]]
+
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
+
         return bbox_results[0],box_loc

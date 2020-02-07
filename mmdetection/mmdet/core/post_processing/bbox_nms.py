@@ -51,6 +51,7 @@ def multiclass_nms(multi_bboxes,
                                            dtype=torch.long)
         bboxes.append(cls_dets)
         labels.append(cls_labels)
+
     if bboxes:
         bboxes = torch.cat(bboxes)
         labels = torch.cat(labels)
@@ -62,5 +63,4 @@ def multiclass_nms(multi_bboxes,
     else:
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
-
     return bboxes, labels

@@ -3,7 +3,7 @@ import torch
 from mmdet.ops.nms import nms_wrapper
 
 
-def multiclass_nms(multi_bboxes,
+def multiclass_nms_allclasses(multi_bboxes,
                    multi_scores,
                    score_thr,
                    nms_cfg,
@@ -34,36 +34,8 @@ def multiclass_nms(multi_bboxes,
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = getattr(nms_wrapper, nms_type)
 
-    # -------------------------zxn------------------------------
-    # method1 argmax for each bbox to select one class for nms
-    max_score = multi_scores.max(1)[0]
-    max_index = multi_scores.max(1)[1]
-    cls_inds = max_score > score_thr
-    cls_inds.max(1)[1]
-    total_index = torch.linspace(1, cls_inds.shape[0], steps=cls_inds.shape[0]).int() - 1
 
-
-    # if not cls_inds.any():
-    #     continue
-    if multi_bboxes.shape[1] == 4:
-        _bboxes = multi_bboxes[cls_inds, :]
-    else:
-        _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
-    _scores = max_score[cls_inds]
-    if score_factors is not None:
-        _scores *= score_factors[cls_inds]
-    cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
-    cls_dets_later, cls_dets_later_index = nms_op(cls_dets, **nms_cfg_)
-    cls_labels = max_index[total_index[cls_inds][cls_dets_later_index].long()] - 1
-
-    bboxes = cls_dets_later
-    labels = cls_labels
-
-
-    # cls_labels = multi_bboxes.new_full((cls_dets.shape[0],),
-    #                                    i - 1,
-    #                                    dtype=torch.long)
-    # # -------------------------zxn------------------------------
+    #------------------- mmdetection code--------------------
     for i in range(1, num_classes):
 
         cls_inds = multi_scores[:, i] > score_thr
@@ -82,12 +54,8 @@ def multiclass_nms(multi_bboxes,
         cls_labels = multi_bboxes.new_full((cls_dets.shape[0], ),
                                            i - 1,
                                            dtype=torch.long)
-        print('----------------------77------------------')
         bboxes.append(cls_dets)
         labels.append(cls_labels)
-    print('30 debug')
-    from IPython import embed
-    embed()
 
     #
     if bboxes:
@@ -101,5 +69,45 @@ def multiclass_nms(multi_bboxes,
     else:
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+    #------------------- mmdetection code--------------------
 
+    print('74 debug')
+    from IPython import embed
+    embed()
+    # -------------------------zxn------------------------------
+    # method1 argmax for each bbox to select one class for nms
+    max_score = multi_scores.max(1)[0]
+    max_index = multi_scores.max(1)[1]
+    cls_inds = max_score > score_thr
+    total_index = torch.linspace(1, cls_inds.shape[0], steps=cls_inds.shape[0]).int() - 1
+
+    # if not cls_inds.any():
+    #     continue
+    if multi_bboxes.shape[1] == 4:
+        _bboxes = multi_bboxes[cls_inds, :]
+    # else:
+    #     _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
+    _scores = max_score[cls_inds]
+    # if score_factors is not None:
+    #     _scores *= score_factors[cls_inds]
+    cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
+    cls_dets_later, cls_dets_later_index = nms_op(cls_dets, **nms_cfg_)
+    cls_labels = max_index[total_index[cls_inds][cls_dets_later_index].long()] - 1
+
+    bboxes.append(cls_dets_later)
+    labels.append(cls_labels)
+
+    if bboxes:
+        bboxes = torch.cat(bboxes)
+        labels = torch.cat(labels)
+        if bboxes.shape[0] > max_num:
+            _, inds = bboxes[:, -1].sort(descending=True)
+            inds = inds[:max_num]
+            bboxes = bboxes[inds]
+            labels = labels[inds]
+    else:
+        bboxes = multi_bboxes.new_zeros((0, 5))
+        labels = multi_bboxes.new_zeros((0,), dtype=torch.long)
+    # return bboxes, labels
+    # -------------------------zxn------------------------------
     return bboxes, labels

@@ -137,6 +137,7 @@ def show_dconv_offset(im, all_offset, path,step=[2, 2], filter_size=3,
 			# plt.pause(0.01)
 			# plt.clf()
 	plt.close('all')
+
 def draw_weight(imgr,imgs,weight,path):
 	refer=weight[0,0,0,:,:]
 	support=weight[1,0,0,:,:]
@@ -164,7 +165,7 @@ def draw_weight(imgr,imgs,weight,path):
 
 
 
-def show_dconv_offset_by_loc(im, all_offset, path,loc,step=[2, 2], filter_size=3,
+def show_dconv_offset_by_loc(im, all_of	fset, path,loc,step=[2, 2], filter_size=3,
 					  dilation=1, pad=1, plot_area=1, plot_level=1,stride=8,refer=None):
 	vis_attr = {'filter_size': filter_size, 'dilation': dilation, 'pad': pad,
 				'plot_area': plot_area, 'plot_level': plot_level,'stride':stride}
@@ -199,7 +200,7 @@ def show_dconv_offset_by_loc(im, all_offset, path,loc,step=[2, 2], filter_size=3
 		# valid_num=np.sum(np.where(cur_im[:,:,0]==255,1,0)*np.where(cur_im[:,:,1]==0,1,0)*np.where(cur_im[:,:,2]==0,1,0))
 		# plt.text(0,0,'valid_offset:%d,offset_ratio:%.2f'%(valid_num,valid_num/6561),fontdict={'size': 10, 'color':  'black'})
 		print('showing',im_h,im_w)
-		plt.axis("off")
+		pl	t.axis("off")
 		plt.imshow(cur_im)
 		fig.savefig(os.path.join(path,'%06d.jpg'%(count)),dpi=150)
 		print(count)
@@ -225,8 +226,7 @@ if __name__=='__main__':
 	# torch.Size([2, 256, 3, 10])
 	for i in range(6):
 		# i=5
-		path='/home/ld/RepPoints/offset/agg_st_stsn_dcn_mean_kernel_fix_rep_support_class3_fuse_test/epoch2/'+str(i)
-		print('video:',i)
+		path='/home/ld/RepPoints/offset/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st/epoch14/'+str(i)
 		# path='/home/ld/RepPoints/offset_back/agg_st/2'
 		files=os.listdir(path)
 		files.sort()
@@ -266,7 +266,7 @@ if __name__=='__main__':
 		# offset2=np.load(path+'/resnetl22.npy')
 		# offset3=np.load(path+'/resnetl23.npy')
 		loc=np.load(path+'/box_loc.npy')
-		print(loc.shape)
+		print(loc)
 		if loc.shape[1]==3:
 			continue
 		loc=loc[np.where(loc[:,3]>0.3)]
@@ -276,7 +276,7 @@ if __name__=='__main__':
 		for m in range(5):
 			print('stage_',m)
 			offset4=np.load(path+'/offset_'+str(m)+'.npy')
-			print(offset4.shape)
+		#	print(offset4.shape)
 			save_path=os.path.join(path,'offset_'+str(m))
 			if not os.path.exists(save_path):
 				os.mkdir(save_path)
@@ -285,7 +285,7 @@ if __name__=='__main__':
 				os.mkdir(save_path)
 			loc_select=loc[np.where(loc[:,2]==scale[m]),:2]
 			# loc_select=loc[np.where(loc[:,2]>0),:2]
-			show_dconv_offset_by_loc(imgs,[offset4],save_path,loc_select[0],plot_level=1,plot_area=3)
+			#show_dconv_offset_by_loc(imgs,[offset4],save_path,loc_select[0],plot_level=1,plot_area=3)
 		# exit()
 		# offset1=np.load(path+'/resnetl20.npy')
 		# offset2=np.load(path+'/resnetl21.npy')
