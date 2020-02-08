@@ -77,7 +77,7 @@ with open(os.path.join(data_path, jsonfile_name), 'r', encoding='utf-8') as f:
 compute_time = 0
 support_count = 2
 out_name = 'refer'
-out_path = '/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_furthernms'
+out_path = '/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_furthernms_thres0.95'
 if not os.path.exists(out_path):
     os.mkdir(out_path)
     os.mkdir(os.path.join(out_path, out_name))

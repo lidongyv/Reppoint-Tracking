@@ -59,15 +59,14 @@ def multiclass_nms_allclasses(multi_bboxes,
         bboxes.append(cls_dets)
         labels.append(cls_labels)
     # ------------------- first stage nms --------------------
-
     #------------------- second stage nms --------------------
     if bboxes:
         bboxes = torch.cat(bboxes)
         labels = torch.cat(labels)
-
         total_index = torch.arange(bboxes.shape[0])
-        bboxes, bboxes_selected_index = nms_op(bboxes, 0.85)
-        labels = labels[total_index[bboxes_selected_index].long()]
+        bboxes, bboxes_selected_index = nms_op(bboxes, 0.95)
+        labels = labels[bboxes_selected_index]
+        # labels = labels[total_index[bboxes_selected_index].long()]
         if bboxes.shape[0] > max_num:
             _, inds = bboxes[:, -1].sort(descending=True)
             inds = inds[:max_num]

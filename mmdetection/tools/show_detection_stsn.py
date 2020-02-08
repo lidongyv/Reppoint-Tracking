@@ -22,12 +22,9 @@ from mmcv.utils import is_str
 from enum import Enum
 import mmcv
 import torch
-import torch.distributed as dist
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import get_dist_info, load_checkpoint
 
 from mmdet.apis import init_dist
-from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.core import coco_eval, results2json
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.core import eval_map
@@ -97,7 +94,7 @@ def imshow_det_bboxes(img,
 					  show=True,
 					  win_name='',
 					  wait_time=0,
-					  out_file=None,out=False):
+					  out_file=None):
 	"""Draw bboxes and class labels (with scores) on an image.
 
 	Args:
@@ -142,8 +139,7 @@ def imshow_det_bboxes(img,
 		imshow(img, win_name, wait_time)
 	if out_file is not None:
 		imwrite(img, out_file)
-	if out:
-		return img
+
 def show_result(img,
 				result,
 				class_names,
@@ -222,23 +218,21 @@ def bbox_overlaps(bboxes1, bboxes2):
 	if exchange:
 		ious = ious.T
 	return ious
-import os
-def get_cls_results(det_results, gt_bboxes, gt_labels, gt_ignore, class_id):
+
+def get_cls_results(det_results, gt_bboxes, gt_labels, class_id,loc_results):
 	"""Get det results and gt information of a certain class."""
 	cls_dets = [det[class_id]
 				for det in det_results]  # det bboxes of this class
+	cls_locs = [loc[class_id]
+				for loc in loc_results]  # det bboxes of this class
 	cls_gts = []  # gt bboxes of this class
-	cls_gt_ignore = []
+
 	for j in range(len(gt_bboxes)):
 		gt_bbox = gt_bboxes[j]
 		cls_inds = (gt_labels[j] == class_id + 1)
 		cls_gt = gt_bbox[cls_inds, :] if gt_bbox.shape[0] > 0 else gt_bbox
 		cls_gts.append(cls_gt)
-		if gt_ignore is None:
-			cls_gt_ignore.append(np.zeros(cls_gt.shape[0], dtype=np.int32))
-		else:
-			cls_gt_ignore.append(gt_ignore[j][cls_inds])
-	return cls_dets, cls_gts, cls_gt_ignore
+	return cls_dets, cls_gts,cls_locs
 def kitti_eval(det_results, dataset, iou_thr=0.5):
 	gt_bboxes = []
 	gt_labels = []
@@ -265,7 +259,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st.py'
+config_file ='/home/hrb/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -274,31 +268,35 @@ if cfg.get('cudnn_benchmark', False):
 cfg.model.pretrained = None
 cfg.data.test.test_mode = True
 dataset = build_dataset(cfg.data.test)
-data_path='/backdata01/bdd'
-jsonfile_name='bdd_val_3class.json'
+data_path='/backdata01/KITTI/kitti/tracking'
+jsonfile_name='kitti_val_3class.json'
 # test a video and show the results
 with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
-out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/bdd/epoch_29_thres0.1_nms0.5_with2'
-result_record=mmcv.load(os.path.join(out_path,out_name,'det_result.pkl'))
-refer_result=result_record
 compute_time=0
-classes = ['car','person','cyc']
-
+classes = ['Car','Person','Cyclist']
+out_name='agg'
+out_path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/'+out_name
 results=[]
 video_length=0
 video_name_check=None
+result_record=[]
 eval_data=[]
 loc_data=[]
-scale=[8,16,32,64,128]
+# scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 offset_data=[]
-mask_data=[]
-
+result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
+loc_result=mmcv.load(os.path.join(out_path,'loc_result.pkl'))
+img_record=mmcv.load(os.path.join(out_path,'images.pkl'))
+# load and test on kitti
+# out_path='/home/ld/RepPoints/final/fuse_c_result/epoch9_thres0.1_nms0.3_with10'
+# result_record=mmcv.load(os.path.join(out_path,out_name,'det_result.pkl'))
+# print('evaluating result of ', out_name)
+# kitti_eval(result_record, dataset)
+# exit()
 gt_bboxes = []
 gt_labels = []
-count=0
 for i in range(len(dataset)):
 	ann = dataset.get_ann_info(i)
 	bboxes = ann['bboxes']
@@ -307,67 +305,98 @@ for i in range(len(dataset)):
 	gt_labels.append(labels)
 
 
-num_classes = len(refer_result[0])  # positive class num
-# print(num_classes)
+num_classes = len(classes)
 img_name=data[0]['filename']
 img=os.path.join(data_path,data[0]['filename'])
-miss_refer_counts=[]
-miss_agg_counts=[]
-if not os.path.exists(os.path.join(os.path.join(out_path),'all_result')):
-		os.mkdir(os.path.join(os.path.join(out_path),'all_result'))
-for i in range(num_classes):
-	miss_refer_count=0
-	miss_agg_count=0
-	# get gt and det bboxes of this class
-	refer_dets, cls_gts, cls_gt_ignore = get_cls_results(
-		refer_result, gt_bboxes, gt_labels, None, i)
-	refer_more=0
-	for j in range(len(cls_gts)):
-		# if i!=1:
-		# 	continue
-		gbox=cls_gts[j]
-		rbox=refer_dets[j]
+# show the first image if needed
+# show_result(img, result_record[0], classes, show=True,out_file=os.path.join(os.path.join(out_path),img_name.split('/')[-1]))
 
-		img_name=data[j]['filename']
-		video_name=data[j]['video_id']
-		img=os.path.join(data_path,data[j]['filename'])
-		img=imshow_det_bboxes(
-				img,
-				gbox,
-				np.ones(gbox.shape[0]).astype(np.int)*i,
-				bbox_color='green',
-				text_color='green',
-				class_names=classes,
-				show=False,
-				out_file=None,out=True)
-		# if i==2 and len(gbox)>0:
-			# out_file=os.path.join(os.path.join(out_path),classes[i],video_name,img_name.split('/')[-1])
-			# if not os.path.exists(os.path.join(os.path.join(out_path))):
-			# 	os.mkdir(os.path.join(os.path.join(out_path)))
-			# if not os.path.exists(os.path.join(os.path.join(out_path),classes[i])):
-			# 	os.mkdir(os.path.join(os.path.join(out_path),classes[i]))
-			# if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name)):
-			# 	os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name))
-		# 	print(out_file)
-		# 	imwrite(img, out_file)
-		# continue
-		img=imshow_det_bboxes(
-				img,
-				rbox,
-				np.ones(rbox.shape[0]).astype(np.int)*i,
-				score_thr=0.1,
-				bbox_color='red',
-				text_color='red',
-				class_names=classes,
-				show=False,
-				out_file=None,out=True)
-		if len(gbox)>0:
-			out_file=os.path.join(os.path.join(out_path),'show_all',classes[i],video_name,img_name.split('/')[-1])
-			if not os.path.exists(os.path.join(os.path.join(out_path),'show_all')):
-				os.mkdir(os.path.join(os.path.join(out_path),'show_all'))
-			if not os.path.exists(os.path.join(os.path.join(out_path),'show_all',classes[i])):
-				os.mkdir(os.path.join(os.path.join(out_path),'show_all',classes[i]))
-			if not os.path.exists(os.path.join(os.path.join(out_path),'show_all',classes[i],video_name)):
-				os.mkdir(os.path.join(os.path.join(out_path),'show_all',classes[i],video_name))
-			print(out_file)
-			imwrite(img, out_file)
+# show the ground truth label if needed
+# imshow_det_bboxes(
+# 		img,
+# 		np.vstack(data[0]['ann']['bboxes']),
+# 		np.vstack(data[0]['ann']['labels']).astype(np.int).squeeze()-1,
+# 		class_names=classes,
+# 		show=True,
+# 		out_file=os.path.join(os.path.join(out_path),img_name.split('/')[-1]))
+# reppoints=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/epoch_9_thres0.1_nms0.5_with2/refer/reppoints.pkl')
+
+
+
+index=[[] for i in range(3)]
+for i in range(num_classes):
+	if not os.path.exists(os.path.join(os.path.join(out_path),classes[i])):
+		os.mkdir(os.path.join(os.path.join(out_path),classes[i]))
+	not_det_count=0
+	wrong_det_count=0
+	# get gt and det bboxes of this class
+	dets, cls_gts,locs = get_cls_results(
+		result_record, gt_bboxes, gt_labels, i,loc_result)
+
+	for j in range(len(cls_gts)):
+		print(data[j]['filename'])
+		gbox=cls_gts[j]
+		pbox=dets[j]
+		ploc=locs[j]
+		gp_iou=bbox_overlaps(gbox,pbox)
+		#iou matrix: dim=0 ground, dim=1 prediction
+		#not detected: if there is no prediction bbox have a iou more than 0.5 to the ground truth
+		not_detected_index=((gp_iou>0.5).astype(np.float).sum(axis=1)>0)==0
+		#not detected bbox
+		not_detected=gbox[not_detected_index]
+		
+		#wrong detected: if no ground truth bbox having a iou more than 0.5 to the prediction
+		wrong_detect_index=(gp_iou>0.5).astype(np.float).sum(axis=0)==0
+		wrong_detected=pbox[wrong_detect_index]
+		wrong_loc=ploc[wrong_detect_index]
+		if len(not_detected)>0:
+			no_loc=[]
+			for m in range(len(not_detected)):
+				no_loc.append([(not_detected[m][0]+not_detected[m][2])//2,(not_detected[m][1]+not_detected[m][3])//2,0,1])
+			img_name=data[j]['filename']
+			video_name=data[j]['video_id']
+			img=os.path.join(data_path,data[j]['filename'])
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name)):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name))
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected'))
+			imshow_det_bboxes(
+					img,
+					not_detected,
+					np.ones(not_detected.shape[0]).astype(np.int)*i,
+					class_names=classes,
+					show=False,
+					bbox_color='green',
+					text_color='green',
+					out_file=file_name)
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'support1')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'support1'))
+			img_name=img_record[j]['filename']
+			video_name=data[j]['video_id']
+			img=os.path.join(data_path,data[j]['filename'])
+
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'support2')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'support2'))
+			file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1])
+			
+			mmcv.dump([no_loc,j,file_name], os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1].split('.')[0]+'.pkl'))
+		# if len(wrong_detected)>0:
+		# 	img_name=data[j]['filename']
+		# 	video_name=data[j]['video_id']
+		# 	img=os.path.join(data_path,data[j]['filename'])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected'))
+		# 	file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected',img_name.split('/')[-1])
+		# 	mmcv.dump([wrong_loc,j,file_name], os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected',img_name.split('/')[-1].split('.')[0]+'.pkl'))
+		# 	imshow_det_bboxes(
+		# 			img,
+		# 			wrong_detected,
+		# 			np.ones(wrong_detected.shape[0]).astype(np.int)*i,
+		# 			class_names=classes,
+		# 			show=False,
+		# 			bbox_color='red',
+		# 			text_color='red',
+		# 			out_file=file_name)
+			# exit()

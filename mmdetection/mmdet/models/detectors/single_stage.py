@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mmdet.core import bbox2result
+from mmdet.core import bbox2result,loc2result
 from .. import builder
 from ..registry import DETECTORS
 from .base import BaseDetector
@@ -138,7 +138,7 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         
 
-        outs = self.bbox_head(x)
+        outs = self.bbox_head(x,test=True)
         # print(len(outs))
         # print(len(outs[0]))
         # print(outs[0][0].shape)
@@ -157,5 +157,5 @@ class SingleStageDetector(BaseDetector):
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-
-        return bbox_results[0],box_loc
+        loc_results = loc2result(box_loc, bbox_list[0][1], self.bbox_head.num_classes)
+        return bbox_results[0],loc_results

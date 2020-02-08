@@ -197,7 +197,25 @@ def bbox2result(bboxes, labels, num_classes):
         bboxes = bboxes.cpu().numpy()
         labels = labels.cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes - 1)]
+def loc2result(loc, labels, num_classes):
+    """Convert location results to a list of numpy arrays.
 
+    Args:
+        loc (Tensor): shape (n, 4),x,y,scale,score
+        labels (Tensor): shape (n, )
+        num_classes (int): class number, including background class
+
+    Returns:
+        list(ndarray): bbox results of each class
+    """
+    if loc.shape[0] == 0:
+        return [
+            np.zeros((0, 4), dtype=np.float32) for i in range(num_classes - 1)
+        ]
+    else:
+        loc = loc.cpu().numpy()
+        labels = labels.cpu().numpy()
+        return [loc[labels == i, :] for i in range(num_classes - 1)]
 
 def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.
