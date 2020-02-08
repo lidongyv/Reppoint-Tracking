@@ -219,10 +219,12 @@ def bbox_overlaps(bboxes1, bboxes2):
 		ious = ious.T
 	return ious
 
-def get_cls_results(det_results, gt_bboxes, gt_labels, class_id):
+def get_cls_results(det_results, gt_bboxes, gt_labels, class_id,loc_results):
 	"""Get det results and gt information of a certain class."""
 	cls_dets = [det[class_id]
 				for det in det_results]  # det bboxes of this class
+	cls_locs = [loc[class_id]
+				for loc in loc_results]  # det bboxes of this class
 	cls_gts = []  # gt bboxes of this class
 
 	for j in range(len(gt_bboxes)):
@@ -230,7 +232,7 @@ def get_cls_results(det_results, gt_bboxes, gt_labels, class_id):
 		cls_inds = (gt_labels[j] == class_id + 1)
 		cls_gt = gt_bbox[cls_inds, :] if gt_bbox.shape[0] > 0 else gt_bbox
 		cls_gts.append(cls_gt)
-	return cls_dets, cls_gts
+	return cls_dets, cls_gts,cls_locs
 def kitti_eval(det_results, dataset, iou_thr=0.5):
 	gt_bboxes = []
 	gt_labels = []
@@ -274,7 +276,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 classes = ['Car','Person','Cyclist']
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/epoch_9_thres0.1_nms0.5_with2/'+out_name
+out_path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/'+out_name
 results=[]
 video_length=0
 video_name_check=None
@@ -315,11 +317,9 @@ img=os.path.join(data_path,data[0]['filename'])
 # 		class_names=classes,
 # 		show=True,
 # 		out_file=os.path.join(os.path.join(out_path),img_name.split('/')[-1]))
-reppoints=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/epoch_9_thres0.1_nms0.5_with2/refer/reppoints.pkl')
-loc_result=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/epoch_9_thres0.1_nms0.5_with2/refer/loc_result.pkl')
-print(loc_result[0])
-print(result_record[0])
-exit()
+# reppoints=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/epoch_9_thres0.1_nms0.5_with2/refer/reppoints.pkl')
+loc_result=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/refer/loc_result.pkl')
+
 index=[[] for i in range(3)]
 for i in range(num_classes):
 	if not os.path.exists(os.path.join(os.path.join(out_path),classes[i])):
@@ -327,24 +327,29 @@ for i in range(num_classes):
 	not_det_count=0
 	wrong_det_count=0
 	# get gt and det bboxes of this class
-	dets, cls_gts = get_cls_results(
-		result_record, gt_bboxes, gt_labels, i)
+	dets, cls_gts,locs = get_cls_results(
+		result_record, gt_bboxes, gt_labels, i,loc_result)
 
 	for j in range(len(cls_gts)):
 		print(data[j]['filename'])
 		gbox=cls_gts[j]
 		pbox=dets[j]
+		ploc=locs[j]
 		gp_iou=bbox_overlaps(gbox,pbox)
 		#iou matrix: dim=0 ground, dim=1 prediction
 		#not detected: if there is no prediction bbox have a iou more than 0.5 to the ground truth
 		not_detected_index=((gp_iou>0.5).astype(np.float).sum(axis=1)>0)==0
 		#not detected bbox
 		not_detected=gbox[not_detected_index]
+		
 		#wrong detected: if no ground truth bbox having a iou more than 0.5 to the prediction
 		wrong_detect_index=(gp_iou>0.5).astype(np.float).sum(axis=0)==0
 		wrong_detected=pbox[wrong_detect_index]
-
+		wrong_loc=ploc[wrong_detect_index]
 		if len(not_detected)>0:
+			no_loc=[]
+			for m in range(len(not_detected)):
+				no_loc.append([(not_detected[m][0]+not_detected[m][2])//2,(not_detected[m][1]+not_detected[m][3])//2,0,1])
 			img_name=data[j]['filename']
 			video_name=data[j]['video_id']
 			img=os.path.join(data_path,data[j]['filename'])
@@ -353,6 +358,7 @@ for i in range(num_classes):
 			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected')):
 				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected'))
 			file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1])
+			mmcv.dump([no_loc,j,file_name], os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1].split('.')[0]+'.pkl'))
 			imshow_det_bboxes(
 					img,
 					not_detected,
@@ -371,6 +377,7 @@ for i in range(num_classes):
 			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected')):
 				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected'))
 			file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected',img_name.split('/')[-1])
+			mmcv.dump([wrong_loc,j,file_name], os.path.join(os.path.join(out_path),classes[i],video_name,'wrong_detected',img_name.split('/')[-1].split('.')[0]+'.pkl'))
 			imshow_det_bboxes(
 					img,
 					wrong_detected,
