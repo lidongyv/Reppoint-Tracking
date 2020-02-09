@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_class_all/epoch_9.pth'
+checkpoint_file='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -65,13 +65,6 @@ if cfg.get('cudnn_benchmark', False):
 cfg.model.pretrained = None
 cfg.data.test.test_mode = True
 dataset = build_dataset(cfg.data.test)
-# load and test
-
-result_record=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_support/epoch_29_thres0.1_nms0.5_only2/agg/det_result.pkl')
-print('evaluating result of support', )
-kitti_eval(result_record, dataset)
-exit()
-
 data_path='/backdata01/KITTI/kitti/tracking'
 jsonfile_name='kitti_val_3class.json'
 # test a video and show the results
@@ -80,10 +73,9 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='agg'
-out_path='/home/ld/RepPoints/ld_result/stsn_class_all/epoch_9_thres0.1_nms0.5_with2'
+out_path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
-if not os.path.exists(os.path.join(out_path,out_name)):
 	os.mkdir(os.path.join(out_path,out_name))
 results=[]
 video_length=0
@@ -95,13 +87,18 @@ eval_data=[]
 loc_data=[]
 offset_data=[[] for i in range(5)]
 offset_data=[offset_data.copy(),offset_data.copy()]
-reppoint_data=[[] for i in range(5)]
 img_record=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
 
+# load and test
 
+# result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
+# print('evaluating result of support', )
+# print(result_record)
+# kitti_eval(result_record, dataset)
+# exit()
 
 
 # build the model from a config file and a checkpoint file
@@ -143,13 +140,11 @@ for i,(frame) in enumerate(data):
 	img_record.append(img_list)
 	result = inference_trackor(model, img_list)
 	offset_t=model.bbox_head.offset
-	reppoint_t=model.bbox_head.reppoints
+ 
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
 	loc_data.append(loc_result)
-	for m in range(len(reppoint_t)):
-		reppoint_data[m].append(reppoint_t[m])
 	for m in range(len(offset_t)):
 		for n in range(len(offset_t[m])):
 			offset_data[n][m].append(offset_t[m][n])
@@ -174,7 +169,6 @@ for i,(frame) in enumerate(data):
 	# eval_data.append(frame_data)
 mmcv.dump(img_record, os.path.join(out_path,out_name,'images.pkl'))
 mmcv.dump(offset_data, os.path.join(out_path,out_name,'offset.pkl'))
-mmcv.dump(reppoint_data, os.path.join(out_path,out_name,'reppoints.pkl'))
 # exit()
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))

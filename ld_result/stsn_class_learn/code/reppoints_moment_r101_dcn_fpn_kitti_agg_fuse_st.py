@@ -150,7 +150,7 @@ total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/stsn_class_all'
+work_dir = '/home/ld/RepPoints/ld_result/stsn_class_learn'
 load_from='/home/ld/RepPoints/ld_result/retrain_reppoint/epoch_30.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'

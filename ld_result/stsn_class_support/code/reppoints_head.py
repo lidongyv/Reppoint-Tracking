@@ -680,8 +680,8 @@ class RepPointsHead(nn.Module):
                 weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-            weight=torch.nn.functional.softmax(weight0,dim=1)
-            agg_feature=torch.sum(feature*weight,dim=1)
+            weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
+            agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
             return agg_cls_out, pts_out_init, pts_out_refine
         else:
@@ -701,8 +701,8 @@ class RepPointsHead(nn.Module):
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
             self.offset=offsets
-            weight=torch.nn.functional.softmax(weight0,dim=1)
-            agg_feature=torch.sum(feature*weight,dim=1)
+            weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
+            agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
             return agg_cls_out, pts_out_init[:1,...], pts_out_refine[:1,...]
         

@@ -217,46 +217,46 @@ class RepPointsHead(nn.Module):
                                     nn.Conv2d(512,2048,
                                     kernel_size=1, stride=1,padding=0))
         
-        # self.reg_weight1=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight2=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight3=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight4=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight5=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
+        self.reg_weight1=nn.Sequential(nn.Conv2d(256,512,
+                                    kernel_size=1, stride=1,padding=0),
+                                    self.relu,
+                                    nn.Conv2d(512,512,
+                                    kernel_size=3, stride=1,padding=1),
+                                    self.relu,
+                                    nn.Conv2d(512,2048,
+                                    kernel_size=1, stride=1,padding=0))
+        self.reg_weight2=nn.Sequential(nn.Conv2d(256,512,
+                                    kernel_size=1, stride=1,padding=0),
+                                    self.relu,
+                                    nn.Conv2d(512,512,
+                                    kernel_size=3, stride=1,padding=1),
+                                    self.relu,
+                                    nn.Conv2d(512,2048,
+                                    kernel_size=1, stride=1,padding=0))
+        self.reg_weight3=nn.Sequential(nn.Conv2d(256,512,
+                                    kernel_size=1, stride=1,padding=0),
+                                    self.relu,
+                                    nn.Conv2d(512,512,
+                                    kernel_size=3, stride=1,padding=1),
+                                    self.relu,
+                                    nn.Conv2d(512,2048,
+                                    kernel_size=1, stride=1,padding=0))
+        self.reg_weight4=nn.Sequential(nn.Conv2d(256,512,
+                                    kernel_size=1, stride=1,padding=0),
+                                    self.relu,
+                                    nn.Conv2d(512,512,
+                                    kernel_size=3, stride=1,padding=1),
+                                    self.relu,
+                                    nn.Conv2d(512,2048,
+                                    kernel_size=1, stride=1,padding=0))
+        self.reg_weight5=nn.Sequential(nn.Conv2d(256,512,
+                                    kernel_size=1, stride=1,padding=0),
+                                    self.relu,
+                                    nn.Conv2d(512,512,
+                                    kernel_size=3, stride=1,padding=1),
+                                    self.relu,
+                                    nn.Conv2d(512,2048,
+                                    kernel_size=1, stride=1,padding=0))
         self.offset=[]
         self.mask=[]
         # print('init transform kernel')
@@ -581,7 +581,7 @@ class RepPointsHead(nn.Module):
     def forward_single(self, x,index,test=False):
         self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
         self.cls_weight=[self.cls_weight1,self.cls_weight2,self.cls_weight3,self.cls_weight4,self.cls_weight5]
-        # self.reg_weight=[self.reg_weight1,self.reg_weight2,self.reg_weight3,self.reg_weight4,self.reg_weight5]
+        self.reg_weight=[self.reg_weight1,self.reg_weight2,self.reg_weight3,self.reg_weight4,self.reg_weight5]
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -666,7 +666,7 @@ class RepPointsHead(nn.Module):
 
         if not test:
             reference=cls_out_feature+0
-            refer_weight_f=self.cls_weight[index](reference)
+            refer_weight_f=self.reg_weight[index](reference)
             weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
             feature=reference.unsqueeze(1)
             for j in range(support_count):
@@ -686,7 +686,7 @@ class RepPointsHead(nn.Module):
             return agg_cls_out, pts_out_init, pts_out_refine
         else:
             reference=cls_out_feature[:1,...]+0
-            refer_weight_f=self.cls_weight[index](reference)
+            refer_weight_f=self.reg_weight[index](reference)
             weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
             feature=reference.unsqueeze(1)
             for j in range(support_count):
@@ -700,7 +700,6 @@ class RepPointsHead(nn.Module):
                 weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-            self.offset=offsets
             weight=torch.nn.functional.softmax(weight0,dim=1)
             agg_feature=torch.sum(feature*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)

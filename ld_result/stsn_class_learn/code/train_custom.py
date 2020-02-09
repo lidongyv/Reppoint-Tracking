@@ -157,27 +157,27 @@ def main():
 									 	 list(model_load.bbox_head.conv13_offset.parameters())+ \
 								         list(model_load.bbox_head.conv13.parameters())+ \
 										 list(model_load.bbox_head.conv14_offset.parameters())+ \
-								        #  list(model_load.bbox_head.conv14.parameters())+ \
+								         list(model_load.bbox_head.conv14.parameters())+ \
 										 list(model_load.bbox_head.conv21_offset.parameters())+ \
 								         list(model_load.bbox_head.conv21.parameters())+ \
 									 	 list(model_load.bbox_head.conv22_offset.parameters())+ \
 								         list(model_load.bbox_head.conv22.parameters())+ \
 									 	 list(model_load.bbox_head.conv23_offset.parameters())+ \
-								        #  list(model_load.bbox_head.conv23.parameters())+ \
+								         list(model_load.bbox_head.conv23.parameters())+ \
 										 list(model_load.bbox_head.conv31_offset.parameters())+ \
 								         list(model_load.bbox_head.conv31.parameters())+ \
 									 	 list(model_load.bbox_head.conv32_offset.parameters())+ \
 								         list(model_load.bbox_head.conv32.parameters())+ \
 									 	 list(model_load.bbox_head.conv33_offset.parameters())+ \
-								        #  list(model_load.bbox_head.conv33.parameters())+ \
+								         list(model_load.bbox_head.conv33.parameters())+ \
 										 list(model_load.bbox_head.conv41_offset.parameters())+ \
 								         list(model_load.bbox_head.conv41.parameters())+ \
 									 	 list(model_load.bbox_head.conv42_offset.parameters())+ \
-								        #  list(model_load.bbox_head.conv42.parameters())+ \
+								         list(model_load.bbox_head.conv42.parameters())+ \
 										 list(model_load.bbox_head.conv51_offset.parameters())+ \
 								         list(model_load.bbox_head.conv51.parameters())+ \
 									 	 list(model_load.bbox_head.conv52_offset.parameters())+ \
-								        #  list(model_load.bbox_head.conv52.parameters())+ \
+								         list(model_load.bbox_head.conv52.parameters())+ \
 										#  list(model_load.bbox_head.reg_weight1.parameters())+ \
 										#  list(model_load.bbox_head.reg_weight2.parameters())+ \
 										#  list(model_load.bbox_head.reg_weight3.parameters())+ \
