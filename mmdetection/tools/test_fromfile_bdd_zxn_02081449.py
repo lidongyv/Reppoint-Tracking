@@ -284,7 +284,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 out_name='refer'
 
-out_path='/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_baseline'
+out_path='/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_furthernms_thres0.95_rerun'
 result_record=mmcv.load(os.path.join(out_path,out_name,'det_result.pkl'))
 refer_result=result_record
 compute_time=0
@@ -343,27 +343,63 @@ cls_gts_all.append(cls_gts_cyc)
 
 
 #
-# 对每一张图像进行循环  仅仅保存重合度比较高
-for j in range(len(cls_gts_car)):
-	img_name = data[j]['filename']
-	video_name = data[j]['video_id']
-	img = os.path.join(data_path, data[j]['filename'])
-	# 对每一张图像中的每个类别进行循环
+# # 对每一张图像进行循环  仅仅保存重合度比较高
+# for j in range(len(cls_gts_car)):
+# 	img_name = data[j]['filename']
+# 	video_name = data[j]['video_id']
+# 	img = os.path.join(data_path, data[j]['filename'])
+# 	# 对每一张图像中的每个类别进行循环
+#
+# 	refer_dets_0 = refer_dets_all[0][j]
+# 	refer_dets_1 = refer_dets_all[1][j]
+# 	refer_dets_2 = refer_dets_all[2][j]
+#
+# 	iou_01 = bbox_overlaps(refer_dets_0, refer_dets_1)
+# 	iou_02 = bbox_overlaps(refer_dets_0, refer_dets_2)
+# 	iou_12 = bbox_overlaps(refer_dets_1, refer_dets_2)
+#
+# 	save_flag = 0
+#
+# 	if iou_01.shape[0] * iou_01.shape[1] != 0:
+# 		if (iou_01 > 0.3).sum() > 0:
+# 			car_index = np.unique(np.argwhere(iou_01 > 0.3)[:, 0])
+# 			ped_idnex = np.unique(np.argwhere(iou_01 > 0.3)[:, 1])
+# 			img = imshow_det_bboxes(
+# 				img,
+# 				refer_dets_0[car_index],
+# 				np.ones(refer_dets_0[car_index].shape[0]).astype(np.int) * 0,
+# 				bbox_color='green',
+# 				text_color='green',
+# 				class_names=classes,
+# 				show=False,
+# 				out_file=None, out=True)
+#
+# 			img = imshow_det_bboxes(
+# 				img,
+# 				refer_dets_1[ped_idnex],
+# 				np.ones(refer_dets_1[ped_idnex].shape[0]).astype(np.int) * 1,
+# 				score_thr=0.1,
+# 				bbox_color='red',
+# 				text_color='red',
+# 				class_names=classes,
+# 				show=False,
+# 				out_file=None, out=True)
+#
+# 			out_file = os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name, img_name.split('/')[-1])
+# 			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4')):
+# 				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4'))
+# 			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4', )):
+# 				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4'))
+# 			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name)):
+# 				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name))
+# 			print(out_file)
+# 			imwrite(img, out_file)
 
-	refer_dets_0 = refer_dets_all[0][j]
-	refer_dets_1 = refer_dets_all[1][j]
-	refer_dets_2 = refer_dets_all[2][j]
-
-	iou_01 = bbox_overlaps(refer_dets_0, refer_dets_1)
-	iou_02 = bbox_overlaps(refer_dets_0, refer_dets_2)
-	iou_12 = bbox_overlaps(refer_dets_1, refer_dets_2)
-
-	save_flag = 0
-
-	# if iou_01.shape[0] * iou_01.shape[1] != 0:
-	# 	if (iou_01 > 0.3).sum() > 0:
-	# 		car_index = np.unique(np.argwhere(iou_01 > 0.3)[:, 0])
-	# 		ped_idnex = np.unique(np.argwhere(iou_01 > 0.3)[:, 1])
+	# if iou_02.shape[0] * iou_02.shape[1] != 0:
+	# 	if (iou_02 > 0.3).sum() > 0:
+	# 		car_index = np.unique(np.argwhere(iou_02 > 0.3)[:, 0])
+	# 		cyc_idnex = np.unique(np.argwhere(iou_02 > 0.3)[:, 1])
+	#
 	# 		img = imshow_det_bboxes(
 	# 			img,
 	# 			refer_dets_0[car_index],
@@ -376,60 +412,26 @@ for j in range(len(cls_gts_car)):
 	#
 	# 		img = imshow_det_bboxes(
 	# 			img,
-	# 			refer_dets_1[ped_idnex],
-	# 			np.ones(refer_dets_1[ped_idnex].shape[0]).astype(np.int) * 1,
+	# 			refer_dets_2[cyc_idnex],
+	# 			np.ones(refer_dets_2[cyc_idnex].shape[0]).astype(np.int) * 2,
 	# 			score_thr=0.1,
-	# 			bbox_color='red',
-	# 			text_color='red',
+	# 			bbox_color='yellow',
+	# 			text_color='yellow',
 	# 			class_names=classes,
 	# 			show=False,
 	# 			out_file=None, out=True)
-	#
-	# 		out_file = os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name, img_name.split('/')[-1])
-	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4')):
-	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4'))
-	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4', )):
-	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4'))
-	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name)):
-	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_4', video_name))
+	# 		print('423 debug')
+	# 		from IPython import embed
+	# 		embed()
+	# 		out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2', video_name, img_name.split('/')[-1])
+	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2')):
+	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2'))
+	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2', )):
+	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2'))
+	# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2', video_name)):
+	# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_debug2', video_name))
 	# 		print(out_file)
 	# 		imwrite(img, out_file)
-
-	if iou_02.shape[0] * iou_02.shape[1] != 0:
-		if (iou_02 > 0.3).sum() > 0:
-			car_index = np.unique(np.argwhere(iou_02 > 0.3)[:, 0])
-			cyc_idnex = np.unique(np.argwhere(iou_02 > 0.3)[:, 1])
-
-			img = imshow_det_bboxes(
-				img,
-				refer_dets_0[car_index],
-				np.ones(refer_dets_0[car_index].shape[0]).astype(np.int) * 0,
-				bbox_color='green',
-				text_color='green',
-				class_names=classes,
-				show=False,
-				out_file=None, out=True)
-
-			img = imshow_det_bboxes(
-				img,
-				refer_dets_2[cyc_idnex],
-				np.ones(refer_dets_2[cyc_idnex].shape[0]).astype(np.int) * 2,
-				score_thr=0.1,
-				bbox_color='yellow',
-				text_color='yellow',
-				class_names=classes,
-				show=False,
-				out_file=None, out=True)
-
-			out_file = os.path.join(os.path.join(out_path), 'show_all_debug_5', video_name, img_name.split('/')[-1])
-			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_5')):
-				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_5'))
-			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_5', )):
-				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_5'))
-			if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_5', video_name)):
-				os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_5', video_name))
-			print(out_file)
-			imwrite(img, out_file)
 	#
 	# if iou_12.shape[0] * iou_12.shape[1] != 0:
 	# 	if (iou_12 > 0.3).sum() > 0:
@@ -467,49 +469,134 @@ for j in range(len(cls_gts_car)):
 	# 		print(out_file)
 	# 		imwrite(img, out_file)
 
-# color_sets = ['green', 'red', 'yellow']
-#
-# for j in range(len(cls_gts_car)):
-# 	img_name = data[j]['filename']
-# 	video_name = data[j]['video_id']
-# 	img = os.path.join(data_path, data[j]['filename'])
-# 	for i in range(num_classes):
-# 		cls_gts = cls_gts_all[i]
-# 		refer_dets = refer_dets_all[i]
-# 		gbox = cls_gts[j]
-# 		rbox = refer_dets[j]
-# 		gp_iou = bbox_overlaps(rbox, rbox)
-#
-# 		# img = imshow_det_bboxes(
-# 		# 	img,
-# 		# 	gbox,
-# 		# 	np.ones(gbox.shape[0]).astype(np.int) * i,
-# 		# 	bbox_color='green',
-# 		# 	text_color='green',
-# 		# 	class_names=classes,
-# 		# 	show=False,
-# 		# 	out_file=None, out=True)
-#
-# 		img = imshow_det_bboxes(
-# 			img,
-# 			rbox,
-# 			np.ones(rbox.shape[0]).astype(np.int) * i,
-# 			score_thr=0.1,
-# 			bbox_color=color_sets[i],
-# 			text_color=color_sets[i],
-# 			class_names=classes,
-# 			show=False,
-# 			out_file=None, out=True)
-#
-# 		out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det', video_name, img_name.split('/')[-1])
-# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det')):
-# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det'))
-# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det', )):
-# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det'))
-# 		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det', video_name)):
-# 			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det', video_name))
-# 		print(out_file)
-# 		imwrite(img, out_file)
+color_sets = ['green', 'red', 'yellow']
+
+for j in range(len(cls_gts_car)):
+	img_name = data[j]['filename']
+	video_name = data[j]['video_id']
+	img = os.path.join(data_path, data[j]['filename'])
+	for i in range(num_classes):
+		cls_gts = cls_gts_all[i]
+		refer_dets = refer_dets_all[i]
+		gbox = cls_gts[j]
+		rbox = refer_dets[j]
+		gp_iou = bbox_overlaps(rbox, rbox)
+
+		# img = imshow_det_bboxes(
+		# 	img,
+		# 	gbox,
+		# 	np.ones(gbox.shape[0]).astype(np.int) * i,
+		# 	bbox_color='green',
+		# 	text_color='green',
+		# 	class_names=classes,
+		# 	show=False,
+		# 	out_file=None, out=True)
+
+		img = imshow_det_bboxes(
+			img,
+			rbox,
+			np.ones(rbox.shape[0]).astype(np.int) * i,
+			score_thr=0.1,
+			bbox_color=color_sets[i],
+			text_color=color_sets[i],
+			class_names=classes,
+			show=False,
+			out_file=None, out=True)
+
+		out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name,
+								img_name.split('/')[-1])
+		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+			os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		print(out_file)
+		imwrite(img, out_file)
+
+		# if video_name == '0000' and img_name.split('/')[-1] == '0000001.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0009' and img_name.split('/')[-1] == '0000048.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0015' and img_name.split('/')[-1] == '0000125.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0015' and img_name.split('/')[-1] == '0000071.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0004' and img_name.split('/')[-1] == '0000124.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0004' and img_name.split('/')[-1] == '0000160.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+		#
+		#
+		# if video_name == '0000' and img_name.split('/')[-1] == '0000001.jpg':
+		# 	out_file = os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name, img_name.split('/')[-1])
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2')):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', )):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2'))
+		# 	if not os.path.exists(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name)):
+		# 		os.mkdir(os.path.join(os.path.join(out_path), 'show_all_debug_3_det_debug2', video_name))
+		# 	print(out_file)
+		# 	imwrite(img, out_file)
+
 
 
 # for i in range(num_classes):

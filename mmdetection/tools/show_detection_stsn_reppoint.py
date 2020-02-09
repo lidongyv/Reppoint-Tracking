@@ -286,6 +286,7 @@ loc_data=[]
 # scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 offset_data=[]
+refer_record=mmcv.load(os.path.join('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/refer','det_result.pkl'))
 result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
 loc_result=mmcv.load(os.path.join(out_path,'loc_result.pkl'))
 img_record=mmcv.load(os.path.join(out_path,'images.pkl'))
@@ -332,74 +333,81 @@ for i in range(num_classes):
 	# get gt and det bboxes of this class
 	dets, cls_gts,locs = get_cls_results(
 		result_record, gt_bboxes, gt_labels, i,loc_result)
-
+	refer_dets, _,_ = get_cls_results(
+		refer_record, gt_bboxes, gt_labels, i,loc_result)
 	for j in range(len(cls_gts)):
 		print(data[j]['filename'])
 		gbox=cls_gts[j]
 		pbox=dets[j]
+		rbox=refer_dets[j]
 		ploc=locs[j]
 		gp_iou=bbox_overlaps(gbox,pbox)
+		gr_iou=bbox_overlaps(gbox,rbox)
 		#iou matrix: dim=0 ground, dim=1 prediction
 		#not detected: if there is no prediction bbox have a iou more than 0.5 to the ground truth
 		not_detected_index=((gp_iou>0.5).astype(np.float).sum(axis=1)>0)==0
+		refer_not_detected_index=((gr_iou>0.5).astype(np.float).sum(axis=1)>0)==0
+		addition_index=refer_not_detected_index*(1-not_detected_index)>0
 		#not detected bbox
-		not_detected=gbox[not_detected_index]
-		
+		addition=gbox[addition_index]
+
+
 		#wrong detected: if no ground truth bbox having a iou more than 0.5 to the prediction
-		wrong_detect_index=(gp_iou>0.5).astype(np.float).sum(axis=0)==0
-		wrong_detected=pbox[wrong_detect_index]
-		wrong_loc=ploc[wrong_detect_index]
-		if len(not_detected)>0:
-			no_loc=[]
-			for m in range(len(not_detected)):
-				no_loc.append([(not_detected[m][0]+not_detected[m][2])//2,(not_detected[m][1]+not_detected[m][3])//2,0,1])
+		# wrong_detect_index=(gp_iou>0.5).astype(np.float).sum(axis=0)==0
+		# wrong_detected=pbox[wrong_detect_index]
+		# wrong_loc=ploc[wrong_detect_index]
+
+		if len(addition)>0:
+			addition_loc=[]
+			for m in range(len(addition)):
+				addition_loc.append([(addition[m][0]+addition[m][2])//2,(addition[m][1]+addition[m][3])//2,0,1])
 			img_name=data[j]['filename']
 			video_name=data[j]['video_id']
 			img=os.path.join(data_path,data[j]['filename'])
-			file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1])
+			file_name=os.path.join(os.path.join(out_path),classes[i],video_name,'addition',img_name.split('/')[-1])
 			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name)):
 				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name))
-			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected')):
-				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected'))
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'addition')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'addition'))
 			imshow_det_bboxes(
 					img,
-					not_detected,
-					np.ones(not_detected.shape[0]).astype(np.int)*i,
+					addition,
+					np.ones(addition.shape[0]).astype(np.int)*i,
 					class_names=classes,
 					show=False,
 					bbox_color='green',
 					text_color='green',
 					out_file=file_name)
 
-			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'support1')):
-				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'support1'))
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'add_support1')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'add_support1'))
 			img=img_record[j][1]
-			support1_name=os.path.join(os.path.join(out_path),classes[i],video_name,'support1',img.split('/')[-1])
+			add_support1_name=os.path.join(os.path.join(out_path),classes[i],video_name,'add_support1',img.split('/')[-1])
 			imshow_det_bboxes(
 					img,
-					not_detected,
-					np.ones(not_detected.shape[0]).astype(np.int)*i,
+					addition,
+					np.ones(addition.shape[0]).astype(np.int)*i,
 					class_names=classes,
 					show=False,
 					bbox_color='green',
 					text_color='green',
-					out_file=support1_name)
+					out_file=add_support1_name)
 
-			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'support2')):
-				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'support2'))
+			if not os.path.exists(os.path.join(os.path.join(out_path),classes[i],video_name,'add_support2')):
+				os.mkdir(os.path.join(os.path.join(out_path),classes[i],video_name,'add_support2'))
 			img=img_record[j][2]
-			support2_name=os.path.join(os.path.join(out_path),classes[i],video_name,'support2',img.split('/')[-1])
+			add_support2_name=os.path.join(os.path.join(out_path),classes[i],video_name,'add_support2',img.split('/')[-1])
 			imshow_det_bboxes(
 					img,
-					not_detected,
-					np.ones(not_detected.shape[0]).astype(np.int)*i,
+					addition,
+					np.ones(addition.shape[0]).astype(np.int)*i,
 					class_names=classes,
 					show=False,
 					bbox_color='green',
 					text_color='green',
-					out_file=support2_name)
+					out_file=add_support2_name)
 			
-			mmcv.dump([no_loc,j,file_name,support1_name,support2_name], os.path.join(os.path.join(out_path),classes[i],video_name,'not_detected',img_name.split('/')[-1].split('.')[0]+'.pkl'))
+			mmcv.dump([addition_loc,j,file_name,add_support1_name,add_support2_name], os.path.join(os.path.join(out_path),classes[i],video_name,'addition',img_name.split('/')[-1].split('.')[0]+'.pkl'))
 		# if len(wrong_detected)>0:
 		# 	img_name=data[j]['filename']
 		# 	video_name=data[j]['video_id']

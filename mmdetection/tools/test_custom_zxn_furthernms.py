@@ -77,7 +77,7 @@ with open(os.path.join(data_path, jsonfile_name), 'r', encoding='utf-8') as f:
 compute_time = 0
 support_count = 2
 out_name = 'refer'
-out_path = '/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_furthernms_thres0.95'
+out_path = '/home/zxn/RepPoints/zxn_result/debug/reppoints_moment_r101_dcn_fpn_bdd_agg_fuse_st_futhernms/epoch_29_thres0.1_nms0.5_with2_furthernms_thres0.85_rerun_debug'
 if not os.path.exists(out_path):
     os.mkdir(out_path)
     os.mkdir(os.path.join(out_path, out_name))
@@ -125,9 +125,13 @@ for i, (frame) in enumerate(data):
     # img = mmcv.imread(os.path.join(data_path,img_name))
     img = os.path.join(data_path, img_name)
     img_list = img
+    print(img_list.split('/')[-2])
+    print(img_list.split('/')[-1])
+    if img_list.split('/')[-2] == '0015' and img_list.split('/')[-1] == '0000071.jpg':
+        print('------------ testing  testing  testing 131 131 131 ------------')
     result = inference_trackor(model, img_list)
-    for m in range(5):
-        offsets[m].append(model.bbox_head.offset[m])
+# for m in range(5):
+#     offsets[m].append(model.bbox_head.offset[m])
     bbox_result = result[0]
 
     loc_result = result[1]

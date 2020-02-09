@@ -108,7 +108,6 @@ class RepPointsHead_allclasses(nn.Module):
         # array([-1, -1, -1,  0, -1,  1,  0, -1,  0,  0,  0,  1,  1, -1,  1,  0,  1,
         #         1])
         self._init_layers()
-        self.offset = []
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)

@@ -114,8 +114,8 @@ if __name__=='__main__':
 	offsets=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/agg/offset.pkl')
 	path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/agg'
 	classes = ['Car','Person','Cyclist']
-	split=['not_detected']
-	support=['support1','support2']
+	split=['addition']
+	support=['add_support1','add_support2']
 	for i in range(len(classes)):
 		class_path=os.path.join(path,classes[i])
 		video_name=os.listdir(class_path)
@@ -134,7 +134,7 @@ if __name__=='__main__':
 					reppoint_support2=reppoints[0][index][2:3,...]
 					offset_support1=offsets[0][0][index]
 					offset_support2=offsets[1][0][index]
-					print(offset_support1.shape,offset_support2.shape)
+					# print(offset_support1.shape,offset_support2.shape)
 					img=matplotlib.image.imread(img_name)
 					img=cv2.resize(img,(1242,374))
 					support1=matplotlib.image.imread(support1_name)

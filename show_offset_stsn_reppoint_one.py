@@ -70,7 +70,7 @@ def plot_according_to_point(vis_attr, im, source_points, map_h, map_w, color=[25
 	return im
 
 
-def show_dconv_offset_by_loc(im, all_offset, path,loc,step=[2, 2], filter_size=3,
+def show_dconv_offset_by_loc(im, all_offset, path,loc,bias=None,step=[2, 2], filter_size=3,
 					  dilation=1, pad=1, plot_area=1, plot_level=1,stride=8,agg=None):
 	vis_attr = {'filter_size': filter_size, 'dilation': dilation, 'pad': pad,
 				'plot_area': plot_area, 'plot_level': plot_level,'stride':stride}
@@ -81,10 +81,19 @@ def show_dconv_offset_by_loc(im, all_offset, path,loc,step=[2, 2], filter_size=3
 	fig=plt.figure(figsize=(10, 3))
 	count=0
 	for (im_w,im_h) in loc:
+
+
 		source_y = im_h
 		source_x = im_w
 		im_w=im_w/(im.shape[1] / map_w)
 		im_h=im_h/(im.shape[0] / map_h)
+		if bias is not None:
+			bias_h=np.clip(im_h.astype(np.int), a_min = 0, a_max = bias.shape[-1])
+			bias_w=np.clip(im_w.astype(np.int), a_min = 0, a_max = bias.shape[-2])
+			im_w=im_w+bias[0,1,bias_h,bias_w]
+			im_h=im_h+bias[0,0,bias_h,bias_w]
+			im_wt=(im_w*(im.shape[1] / map_w)).astype(np.int)
+			im_ht=(im_h*(im.shape[0] / map_h)).astype(np.int)
 		target_point = np.array([im_h,im_w]).astype(np.int)
 		cur_im = np.copy(im)
 		source_points = get_bottom_position(vis_attr, [target_point], all_offset)
@@ -93,9 +102,19 @@ def show_dconv_offset_by_loc(im, all_offset, path,loc,step=[2, 2], filter_size=3
 				or source_y >= im.shape[0] - plot_area or source_x >= im.shape[1] - plot_area:
 			print('out of image')
 			continue
+		if bias is not None:
+			if im_ht < plot_area or im_wt < plot_area \
+					or im_ht >= im.shape[0] - plot_area or im_wt >= im.shape[1] - plot_area:
+				print('out of image')
+				continue
+
 		cur_im[source_y-plot_area:source_y+plot_area+1, source_x-plot_area:source_x+plot_area+1, :] = \
 			np.tile(np.reshape([255, 255, 0], (1, 1, 3)), (2*plot_area+1, 2*plot_area+1, 1))
+		if bias is not None:
+			cur_im[im_ht-plot_area:im_ht+plot_area+1, im_wt-plot_area:im_wt+plot_area+1, :] = \
+				np.tile(np.reshape([0, 255, 0], (1, 1, 3)), (2*plot_area+1, 2*plot_area+1, 1))
 		im=np.copy(cur_im)
+
 	print('showing',im_h,im_w)
 	plt.axis("off")
 	plt.imshow(cur_im)
@@ -110,12 +129,11 @@ if __name__=='__main__':
 	# torch.Size([2, 256, 12, 39])
 	# torch.Size([2, 256, 6, 20])
 	# torch.Size([2, 256, 3, 10])
-	reppoints=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/agg/reppoints.pkl')
-	offsets=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/agg/offset.pkl')
-	path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2/agg'
+	reppoints=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_support/epoch_9_thres0.1_nms0.5_with2/agg/reppoints.pkl')
+	offsets=mmcv.load('/home/ld/RepPoints/ld_result/stsn_class_support/epoch_9_thres0.1_nms0.5_with2/agg/offset.pkl')
+	path='/home/ld/RepPoints/ld_result/stsn_class_support/epoch_9_thres0.1_nms0.5_with2/agg'
 	classes = ['Car','Person','Cyclist']
-	split=['not_detected']
-	support=['support1','support2']
+	split=['addition','not_detected']
 	for i in range(len(classes)):
 		class_path=os.path.join(path,classes[i])
 		video_name=os.listdir(class_path)
@@ -132,9 +150,12 @@ if __name__=='__main__':
 					reppoint_frame=reppoints[0][index][:1,...]
 					reppoint_support1=reppoints[0][index][1:2,...]
 					reppoint_support2=reppoints[0][index][2:3,...]
+
 					offset_support1=offsets[0][0][index]
 					offset_support2=offsets[1][0][index]
-					print(offset_support1.shape,offset_support2.shape)
+					# print(offset_support1.shape,offsets[1][0][index].shape)
+					# exit()
+					# print(offset_support1.shape,offset_support2.shape)
 					img=matplotlib.image.imread(img_name)
 					img=cv2.resize(img,(1242,374))
 					support1=matplotlib.image.imread(support1_name)
@@ -159,7 +180,7 @@ if __name__=='__main__':
 						os.mkdir(offset_path)
 					offset_path=os.path.join(offset_path,support1_name[-1])
 					print(offset_path)
-					show_dconv_offset_by_loc(support1,[offset_support1,reppoint_support1],offset_path,loc,plot_level=2,plot_area=3)
+					show_dconv_offset_by_loc(support1,[reppoint_support1],offset_path,loc,bias=offset_support1,plot_level=1,plot_area=3)
 					#support2 offset
 					support2_name=support2_name.split('/')
 					offset_path='/'.join(support2_name[:-1])+'/offset'
@@ -167,5 +188,5 @@ if __name__=='__main__':
 						os.mkdir(offset_path)
 					offset_path=os.path.join(offset_path,support2_name[-1])
 					print(offset_path)
-					show_dconv_offset_by_loc(support2,[offset_support2,reppoint_support2],offset_path,loc,plot_level=2,plot_area=3)
+					show_dconv_offset_by_loc(support2,[reppoint_support2],offset_path,loc,bias=offset_support2,plot_level=1,plot_area=3)
 				# exit()
