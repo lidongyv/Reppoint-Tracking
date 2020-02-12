@@ -11,7 +11,7 @@ from mmdet.ops import DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob
-
+from linearization import *
 
 @HEADS.register_module
 class RepPointsHead(nn.Module):
@@ -111,16 +111,13 @@ class RepPointsHead(nn.Module):
         self._init_agg()
     def _init_agg(self):
         in_channels=512
-        out_channels=256
         offset_channels=18
-
         conv_op = DeformConv
         self.with_modulated_dcn=False
         self.conv11_offset = nn.Conv2d(in_channels, offset_channels,
                                     kernel_size=3, stride=1,padding=1,dilation=1)
         self.conv11 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
                             padding=1, dilation=1, deformable_groups=1, bias=False)
-        
         self.conv12_offset = nn.Conv2d(in_channels,  offset_channels,
                             kernel_size=3, stride=1, padding=1, dilation=1)
         self.conv12 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
@@ -129,10 +126,10 @@ class RepPointsHead(nn.Module):
                             kernel_size=3,stride=1,padding=1,dilation=1)
         self.conv13 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
                             padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv14_offset = nn.Conv2d(in_channels,offset_channels,
+        self.conv14_offset = nn.Conv2d(in_channels,2,
                             kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv14 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
+        # self.conv14 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+        #                     padding=1,dilation=1,deformable_groups=1,bias=False)
         #agg2
         self.conv21_offset = nn.Conv2d(in_channels, offset_channels,
                                     kernel_size=3, stride=1,padding=1,dilation=1)
@@ -142,10 +139,10 @@ class RepPointsHead(nn.Module):
                             kernel_size=3, stride=1, padding=1, dilation=1)
         self.conv22 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
                             padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv23_offset = nn.Conv2d(in_channels,offset_channels,
+        self.conv23_offset = nn.Conv2d(in_channels,2,
                             kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv23 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
+        # self.conv23 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+        #                     padding=1,dilation=1,deformable_groups=1,bias=False)
         #agg3
         self.conv31_offset = nn.Conv2d(in_channels, offset_channels,
                                     kernel_size=3, stride=1,padding=1,dilation=1)
@@ -155,19 +152,19 @@ class RepPointsHead(nn.Module):
                             kernel_size=3, stride=1, padding=1, dilation=1)
         self.conv32 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
                             padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv33_offset = nn.Conv2d(in_channels,offset_channels,
+        self.conv33_offset = nn.Conv2d(in_channels,2,
                             kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv33 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
+        # self.conv33 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+        #                     padding=1,dilation=1,deformable_groups=1,bias=False)
         #agg4
         self.conv41_offset = nn.Conv2d(in_channels, offset_channels,
                                     kernel_size=3, stride=1,padding=1,dilation=1)
         self.conv41 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
                             padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv42_offset = nn.Conv2d(in_channels,offset_channels,
+        self.conv42_offset = nn.Conv2d(in_channels,2,
                             kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv42 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
+        # self.conv42 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+        #                     padding=1,dilation=1,deformable_groups=1,bias=False)
 
 
         #agg5
@@ -175,10 +172,10 @@ class RepPointsHead(nn.Module):
                                     kernel_size=3, stride=1,padding=1,dilation=1)
         self.conv51 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
                             padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv52_offset = nn.Conv2d(in_channels,offset_channels,
+        self.conv52_offset = nn.Conv2d(in_channels,2,
                             kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv52 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
+        # self.conv52 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
+        #                     padding=1,dilation=1,deformable_groups=1,bias=False)
         self.cls_weight1=nn.Sequential(nn.Conv2d(256,512,
                                     kernel_size=1, stride=1,padding=0),
                                     self.relu,
@@ -309,12 +306,6 @@ class RepPointsHead(nn.Module):
                                                   pts_out_dim, 1, 1, 0)
 
     def init_weights(self):
-        for m in self.modules():
-          if isinstance(m,nn.Conv2d):
-            normal_init(m, std=0.01)
-          elif isinstance(m, nn.GroupNorm):
-            nn.init.constant_(m.weight,1)
-            nn.init.constant_(m.bias,0)
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -333,28 +324,23 @@ class RepPointsHead(nn.Module):
         normal_init(self.conv13_offset, std=0.01)
         normal_init(self.conv13, std=0.01)
         normal_init(self.conv14_offset, std=0.01)
-        normal_init(self.conv14, std=0.01)
         normal_init(self.conv21_offset, std=0.01)
         normal_init(self.conv21, std=0.01)
         normal_init(self.conv22_offset, std=0.01)
         normal_init(self.conv22, std=0.01)
         normal_init(self.conv23_offset, std=0.01)
-        normal_init(self.conv23, std=0.01)
         normal_init(self.conv31_offset, std=0.01)
         normal_init(self.conv31, std=0.01)
         normal_init(self.conv32_offset, std=0.01)
         normal_init(self.conv32, std=0.01)
         normal_init(self.conv33_offset, std=0.01)
-        normal_init(self.conv33, std=0.01)
         normal_init(self.conv41_offset, std=0.01)
         normal_init(self.conv41, std=0.01)
         normal_init(self.conv42_offset, std=0.01)
-        normal_init(self.conv42, std=0.01)
         normal_init(self.conv51_offset, std=0.01)
         normal_init(self.conv51, std=0.01)
         normal_init(self.conv52_offset, std=0.01)
-        normal_init(self.conv52, std=0.01)
-
+    
     def agg1(self,support,reference,test=False):
 
         feature_f0=torch.cat([support,reference],dim=1)
@@ -377,10 +363,16 @@ class RepPointsHead(nn.Module):
 
             offset=self.conv14_offset(feature_f3)
 
-            feature=self.conv14(support,offset)
-
+            # x = torch.linspace(-1, 1, reference.shape[-2])
+            # y = torch.linspace(-1, 1, reference.shape[-1])
+            # meshx, meshy = torch.meshgrid((x, y))
+            # grid = torch.stack((meshy, meshx), 2)
+            # grid = grid.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out = torch.nn.functional.grid_sample(support, grid)
             
-            return feature,offset
+            return offset
 
     def agg2(self,support,reference,test=False):
 
@@ -398,9 +390,22 @@ class RepPointsHead(nn.Module):
             feature_f2=self.conv22(feature_f1,offset2)
 
             offset=self.conv23_offset(feature_f2)
-            feature=self.conv23(support,offset)
-            return feature,offset
-
+            return offset
+            # x = torch.linspace(-1, 1, reference.shape[-2])
+            # y = torch.linspace(-1, 1, reference.shape[-1])
+            # meshx, meshy = torch.meshgrid((x, y))
+            # grid = torch.stack((meshy, meshx), 2)
+            # grid = grid.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out = torch.nn.functional.grid_sample(support, grid)
+            
+            # # print(torch.mean(reference-out))
+            
+            # if test:
+            #     return out,offset
+            # else:
+            #    return out
     def agg3(self,support,reference,test=False):
 
         feature_f0=torch.cat([support,reference],dim=1)
@@ -417,8 +422,22 @@ class RepPointsHead(nn.Module):
             feature_f2=self.conv32(feature_f1,offset2)
 
             offset=self.conv33_offset(feature_f2)
-            feature=self.conv33(support,offset)
-            return feature,offset
+            return offset
+            
+            # x = torch.linspace(-1, 1, reference.shape[-2])
+            # y = torch.linspace(-1, 1, reference.shape[-1])
+            # meshx, meshy = torch.meshgrid((x, y))
+            # grid = torch.stack((meshy, meshx), 2)
+            # grid = grid.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out = torch.nn.functional.grid_sample(support, grid)
+            
+
+            # if test:
+            #     return out,offset
+            # else:
+            #    return out
     def agg4(self,support,reference,test=False):
         
         feature_f0=torch.cat([support,reference],dim=1)
@@ -431,8 +450,22 @@ class RepPointsHead(nn.Module):
             feature_f1=self.conv41(feature_f0,offset1)
 
             offset=self.conv42_offset(feature_f1)
-            feature=self.conv42(support,offset)
-            return feature,offset
+            return offset
+            # x = torch.linspace(-1, 1, reference.shape[-2])
+            # y = torch.linspace(-1, 1, reference.shape[-1])
+            # meshx, meshy = torch.meshgrid((x, y))
+            # grid = torch.stack((meshy, meshx), 2)
+            # grid = grid.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out = torch.nn.functional.grid_sample(support, grid)
+            
+            # # print(torch.mean(reference-out))
+            
+            # if test:
+            #     return out,offset
+            # else:
+            #    return out
     def agg5(self,support,reference,test=False):
         
         feature_f0=torch.cat([support,reference],dim=1)
@@ -445,8 +478,20 @@ class RepPointsHead(nn.Module):
             feature_f1=self.conv51(feature_f0,offset1)
 
             offset=self.conv52_offset(feature_f1)
-            feature=self.conv52(support,offset)
-            return feature,offset
+            return offset
+            # x=torch.linspace(-1,1,reference.shape[-2])
+            # y=torch.linspace(-1,1,reference.shape[-1])
+            # grid_x, grid_y = torch.meshgrid(x, y)
+            # grid=torch.stack([grid_y,grid_x],dim=2)
+            # grid=grid.repeat(reference.shape[0],1,1,1).to(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out=torch.nn.functional.grid_sample(support,grid,mode='bilinear',align_corners=True)
+            
+            # if test:
+            #     return out,offset
+            # else:
+            #    return out
     def points2bbox(self, pts, y_first=True):
         """
         Converting the points set into bounding box.
@@ -555,13 +600,26 @@ class RepPointsHead(nn.Module):
         # select_id[1]=torch.arange(x.shape[0])+2
         # select_id[1]=torch.where(select_id[1]>=x.shape[0],torch.arange(x.shape[0]),select_id[1])
 
-        
-        select_id[0]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[0][select_id[0]==np.arange(x.shape[0])]=select_id[0][select_id[0]==np.arange(x.shape[0])]-1
+        select_id[0]=torch.arange(x.shape[0])-1
+        select_id[0]=torch.where(select_id[0]<0,torch.arange(x.shape[0])+1,select_id[0])
         select_id[1]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[1][select_id[1]==np.arange(x.shape[0])]=select_id[1][select_id[1]==np.arange(x.shape[0])]-1
+        select_id[1][select_id[1]==np.arange(x.shape[0])]=select_id[1][select_id[1]==np.arange(x.shape[0])]-2
+        steps=(select_id[1]-np.arange(x.shape[0]))/(select_id[0]-np.arange(x.shape[0]))
         offsets=[]
-
+        reference=x+0
+        # for j in range(support_count):
+        #     support=x[select_id[j],:,:,:]
+        #     offset=self.agg[index](support,reference)
+        #     offsets.append(offset)
+        with torch.no_grad():
+            x_linear = torch.linspace(-1, 1, reference.shape[-2])
+            y_linear = torch.linspace(-1, 1, reference.shape[-1])
+            meshx, meshy = torch.meshgrid((x_linear, y_linear))
+            grid_init = torch.stack((meshy, meshx), 2)
+            grid_init = grid_init.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
+            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            # out = torch.nn.functional.grid_sample(support, grid)
 
         points_init = 0
         cls_feat = x
@@ -584,7 +642,7 @@ class RepPointsHead(nn.Module):
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
         if test:
-            self.reppoints.append(dcn_offset.data.cpu().numpy())
+            self.reppoints=dcn_offset.data.cpu().numpy()
         cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # cls_out = self.reppoints_cls_out(cls_out_feature)        
 
@@ -593,46 +651,116 @@ class RepPointsHead(nn.Module):
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
 
+
+        # reference=pts_init_feature+0
+        # refer_weight_f=self.cls_weight[index](reference)
+        # weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
+        # feature=reference.unsqueeze(1)
+        
+        # for j in range(support_count):
+        #     grid_pts_init=grid_init+0
+        #     support=pts_init_feature[select_id[j],:,:,:]
+        #     grid_pts_init[:,:,:,0]=grid_pts_init[:,:,:,0]+offsets[j][:,1,:,:]/reference.shape[-1]
+        #     grid_pts_init[:,:,:,1]=grid_pts_init[:,:,:,1]+offsets[j][:,0,:,:]/reference.shape[-2]
+        #     tk_feature = torch.nn.functional.grid_sample(support, grid_pts_init)
+        #     weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.reg_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
+        #     weight0=torch.cat([weight0,weight],dim=1)
+        #     feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
+        # weight=torch.nn.functional.softmax(weight0,dim=1)
+        # agg_feature=torch.sum(feature*weight,dim=1)
+        # agg_pts_out_init = self.reppoints_pts_init_out(agg_feature)
+
         if not test:
-            reference=cls_out_feature+0
+            #init the offset
+            c=cls_out_feature+0
             refer_weight_f=self.cls_weight[index](reference)
             weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
             feature=reference.unsqueeze(1)
-            for j in range(support_count):
-                support=cls_out_feature[select_id[j],:,:,:]
-                tk_feature,_=self.agg[index](support,reference)
-                weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
-                weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
+            
+            support=cls_out_feature[select_id[0],:,:,:]
+            offset=self.agg[index](support,reference)
+            grid_cls_init=grid_init+0
+            grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            tk_feature,grad = grid_sample(support,reference, grid_cls_init,mode='linearized')
+            weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
+            weight0=torch.cat([weight0,weight],dim=1)
+            feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
+            
+            #inv offset to warp reference by tht init offset
+            inv_offset=self.agg[index](reference,support)
+            
+            #use the init offset, warp the reference by grad
+            support=cls_out_feature[select_id[1],:,:,:]
+            offset_xy=(inv_offset+0)*step
+            #A:[B, H, W, C,3],X:[B,H,W,3,1],X0:BCHW
+            image_linearized = torch.matmul(grad, torch.cat([offset,torch.ones_like(offset[...,:1])],dim=-1))[..., 0].permute(0, 3, 1, 2) + reference
+            support=cls_out_feature[select_id[1],:,:,:]
+            grid_cls_inv=grid_init+0
+            grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+inv_offset[:,1,:,:]/reference.shape[-1]
+            grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+inv_offset[:,0,:,:]/reference.shape[-2]
+            image_linearized,_=grid_sample(image_linearized,image_linearized, grid_cls_inv,mode='linearized')
+            offset=self.agg[index](support,image_linearized)
+            grid_cls_init=grid_init+offset_xy
+            grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            tk_feature,grad = grid_sample(support,image_linearized, grid_cls_init,mode='linearized')
+            weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
+            weight0=torch.cat([weight0,weight],dim=1)
+            feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
+            
+            #use the init offset, warp the reference by offset
+            support=cls_out_feature[select_id[1],:,:,:]
+            offset_xy=(inv_offset+0)*step
+            grid_cls_inv=grid_init+0
+            grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+inv_offset[:,1,:,:]/reference.shape[-1]
+            grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+inv_offset[:,0,:,:]/reference.shape[-2]
+            image_linearized,_=grid_sample(reference+0,reference+0, grid_cls_inv,mode='linearized')
+
+            support=cls_out_feature[select_id[1],:,:,:]
+            offset=self.agg[index](support,image_linearized)
+            grid_cls_init=grid_init+offset_xy
+            grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
+            grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
+            tk_feature,grad = grid_sample(support,image_linearized, grid_cls_init,mode='linearized')
+            weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
+            weight0=torch.cat([weight0,weight],dim=1)
+            feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
+            
+            
             weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
             agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
+            return agg_cls_out, pts_out_init, pts_out_refine
         else:
-            reference=cls_out_feature[:1,...]
+            reference=cls_out_feature[:1,...]+0
             refer_weight_f=self.cls_weight[index](reference)
             weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
             feature=reference.unsqueeze(1)
             tmp_offset=[]
             for j in range(support_count):
+                grid_cls_init=grid_init[:1,...]+0
                 support=cls_out_feature[j+1:j+2,:,:,:]
-                tk_feature,tk_offset=self.agg[index](support,reference)
+                offset=self.agg[index](support,reference)
+                offsets.append(offset)
+                grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offsets[j][:,1,:,:]/reference.shape[-1]
+                grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offsets[j][:,0,:,:]/reference.shape[-2]
+                tk_feature = torch.nn.functional.grid_sample(support, grid_cls_init)
                 weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-                tmp_offset.append(tk_offset.data.cpu().numpy())
+                tmp_offset.append(offset.data.cpu().numpy())
+            self.offset=tmp_offset
             weight=torch.nn.functional.softmax(weight0,dim=1)
             agg_feature=torch.sum(feature*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
-            self.offset.append(tmp_offset)
-        if not test:
-            return agg_cls_out, pts_out_init, pts_out_refine
-        else:
             return agg_cls_out, pts_out_init[:1,...], pts_out_refine[:1,...]
+        
 
     def forward(self, feats,test=False):
         #5 feature map
-        self.offset=[]
         self.reppoints=[]
+        self.offsets=[]
         outs=multi_apply(self.forward_single, feats,[0,1,2,3,4],[test for i in range(5)])
         # outs=[]
         # for i in range(len(feats)):

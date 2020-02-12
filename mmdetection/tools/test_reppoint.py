@@ -89,7 +89,7 @@ loc_data=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
-
+reppoint_data=[[] for i in range(5)]
 # load and test
 
 # result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
@@ -121,7 +121,7 @@ for i,(frame) in enumerate(data):
 	img=os.path.join(data_path,img_name)
 	img_list=img
 	result = inference_trackor(model, img_list)
-
+	reppoint_t=model.bbox_head.reppoints
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
@@ -133,7 +133,8 @@ for i,(frame) in enumerate(data):
 	inds = scores > 0
 	scores=bboxes[inds, :][:,4:]
 	bboxes = bboxes[inds, :][:,:4]
-
+	for m in range(len(reppoint_t)):
+		reppoint_data[m].append(reppoint_t)
 	labels = [
 		np.full(bbox.shape[0], i, dtype=np.int32)
 		for i, bbox in enumerate(bbox_result)

@@ -110,8 +110,10 @@ class Resize(object):
 
     def _resize_img(self, results):
         if self.keep_ratio:
+            #1280,720
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
+            #1280,386
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 results['img'], results['scale'], return_scale=True)
@@ -241,11 +243,14 @@ class Pad(object):
         assert size is None or size_divisor is None
 
     def _pad_img(self, results):
+        
         if self.size is not None:
             padded_img = mmcv.impad(results['img'], self.size)
         elif self.size_divisor is not None:
             padded_img = mmcv.impad_to_multiple(
                 results['img'], self.size_divisor, pad_val=self.pad_val)
+        # print(results['img'].shape,padded_img.shape)
+        # (386, 1280, 3) (416, 1280, 3)
         results['img'] = padded_img
         results['pad_shape'] = padded_img.shape
         results['pad_fixed_size'] = self.size

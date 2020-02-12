@@ -80,8 +80,8 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None):
-        with torch.no_grad():
-            x = self.extract_feat(img)
+        
+        x = self.extract_feat(img)
         # print(img.shape)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
