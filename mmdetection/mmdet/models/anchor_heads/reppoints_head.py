@@ -108,163 +108,6 @@ class RepPointsHead(nn.Module):
         # array([-1, -1, -1,  0, -1,  1,  0, -1,  0,  0,  0,  1,  1, -1,  1,  0,  1,
         #         1])
         self._init_layers()
-        self._init_agg()
-    def _init_agg(self):
-        in_channels=512
-        out_channels=256
-        offset_channels=18
-
-        conv_op = DeformConv
-        self.with_modulated_dcn=False
-        self.conv11_offset = nn.Conv2d(in_channels, offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv11 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=1, bias=False)
-        
-        self.conv12_offset = nn.Conv2d(in_channels,  offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv12 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv13_offset = nn.Conv2d(in_channels, offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv13 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv14_offset = nn.Conv2d(in_channels,offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv14 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        #agg2
-        self.conv21_offset = nn.Conv2d(in_channels, offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv21 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv22_offset = nn.Conv2d(in_channels,  offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv22 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv23_offset = nn.Conv2d(in_channels,offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv23 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        #agg3
-        self.conv31_offset = nn.Conv2d(in_channels, offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv31 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv32_offset = nn.Conv2d(in_channels,  offset_channels,
-                            kernel_size=3, stride=1, padding=1, dilation=1)
-        self.conv32 = conv_op(in_channels,in_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.conv33_offset = nn.Conv2d(in_channels,offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv33 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        #agg4
-        self.conv41_offset = nn.Conv2d(in_channels, offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv41 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv42_offset = nn.Conv2d(in_channels,offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv42 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-
-
-        #agg5
-        self.conv51_offset = nn.Conv2d(in_channels, offset_channels,
-                                    kernel_size=3, stride=1,padding=1,dilation=1)
-        self.conv51 = conv_op(in_channels, in_channels, kernel_size=3, stride=1,
-                            padding=1, dilation=1, deformable_groups=1, bias=False)
-        self.conv52_offset = nn.Conv2d(in_channels,offset_channels,
-                            kernel_size=3,stride=1,padding=1,dilation=1)
-        self.conv52 = conv_op(out_channels,out_channels,kernel_size=3,stride=1,
-                            padding=1,dilation=1,deformable_groups=1,bias=False)
-        self.cls_weight1=nn.Sequential(nn.Conv2d(256,512,
-                                    kernel_size=1, stride=1,padding=0),
-                                    self.relu,
-                                    nn.Conv2d(512,512,
-                                    kernel_size=3, stride=1,padding=1),
-                                    self.relu,
-                                    nn.Conv2d(512,2048,
-                                    kernel_size=1, stride=1,padding=0))
-        self.cls_weight2=nn.Sequential(nn.Conv2d(256,512,
-                                    kernel_size=1, stride=1,padding=0),
-                                    self.relu,
-                                    nn.Conv2d(512,512,
-                                    kernel_size=3, stride=1,padding=1),
-                                    self.relu,
-                                    nn.Conv2d(512,2048,
-                                    kernel_size=1, stride=1,padding=0))
-        self.cls_weight3=nn.Sequential(nn.Conv2d(256,512,
-                                    kernel_size=1, stride=1,padding=0),
-                                    self.relu,
-                                    nn.Conv2d(512,512,
-                                    kernel_size=3, stride=1,padding=1),
-                                    self.relu,
-                                    nn.Conv2d(512,2048,
-                                    kernel_size=1, stride=1,padding=0))
-        self.cls_weight4=nn.Sequential(nn.Conv2d(256,512,
-                                    kernel_size=1, stride=1,padding=0),
-                                    self.relu,
-                                    nn.Conv2d(512,512,
-                                    kernel_size=3, stride=1,padding=1),
-                                    self.relu,
-                                    nn.Conv2d(512,2048,
-                                    kernel_size=1, stride=1,padding=0))
-        self.cls_weight5=nn.Sequential(nn.Conv2d(256,512,
-                                    kernel_size=1, stride=1,padding=0),
-                                    self.relu,
-                                    nn.Conv2d(512,512,
-                                    kernel_size=3, stride=1,padding=1),
-                                    self.relu,
-                                    nn.Conv2d(512,2048,
-                                    kernel_size=1, stride=1,padding=0))
-        
-        # self.reg_weight1=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight2=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight3=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight4=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        # self.reg_weight5=nn.Sequential(nn.Conv2d(256,512,
-        #                             kernel_size=1, stride=1,padding=0),
-        #                             self.relu,
-        #                             nn.Conv2d(512,512,
-        #                             kernel_size=3, stride=1,padding=1),
-        #                             self.relu,
-        #                             nn.Conv2d(512,2048,
-        #                             kernel_size=1, stride=1,padding=0))
-        self.offset=[]
-        self.mask=[]
-        # print('init transform kernel')
-        # self.trans_kernel=torch.from_numpy(np.load('/home/ld/RepPoints/mmdetection/mmdet/ops/dcn/init_kernel.npy'))
-        # self.trans_kernel=nn.Parameter(self.trans_kernel)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
@@ -309,12 +152,6 @@ class RepPointsHead(nn.Module):
                                                   pts_out_dim, 1, 1, 0)
 
     def init_weights(self):
-        for m in self.modules():
-          if isinstance(m,nn.Conv2d):
-            normal_init(m, std=0.01)
-          elif isinstance(m, nn.GroupNorm):
-            nn.init.constant_(m.weight,1)
-            nn.init.constant_(m.bias,0)
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -326,127 +163,7 @@ class RepPointsHead(nn.Module):
         normal_init(self.reppoints_pts_init_out, std=0.01)
         normal_init(self.reppoints_pts_refine_conv, std=0.01)
         normal_init(self.reppoints_pts_refine_out, std=0.01)
-        normal_init(self.conv11_offset, std=0.01)
-        normal_init(self.conv11, std=0.01)
-        normal_init(self.conv12_offset, std=0.01)
-        normal_init(self.conv12, std=0.01)
-        normal_init(self.conv13_offset, std=0.01)
-        normal_init(self.conv13, std=0.01)
-        normal_init(self.conv14_offset, std=0.01)
-        normal_init(self.conv14, std=0.01)
-        normal_init(self.conv21_offset, std=0.01)
-        normal_init(self.conv21, std=0.01)
-        normal_init(self.conv22_offset, std=0.01)
-        normal_init(self.conv22, std=0.01)
-        normal_init(self.conv23_offset, std=0.01)
-        normal_init(self.conv23, std=0.01)
-        normal_init(self.conv31_offset, std=0.01)
-        normal_init(self.conv31, std=0.01)
-        normal_init(self.conv32_offset, std=0.01)
-        normal_init(self.conv32, std=0.01)
-        normal_init(self.conv33_offset, std=0.01)
-        normal_init(self.conv33, std=0.01)
-        normal_init(self.conv41_offset, std=0.01)
-        normal_init(self.conv41, std=0.01)
-        normal_init(self.conv42_offset, std=0.01)
-        normal_init(self.conv42, std=0.01)
-        normal_init(self.conv51_offset, std=0.01)
-        normal_init(self.conv51, std=0.01)
-        normal_init(self.conv52_offset, std=0.01)
-        normal_init(self.conv52, std=0.01)
 
-    def agg1(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            print('module')
-        else:
-            # print('agg1',feature_f0.device,self.conv11_offset.weight.device)
-            offset1=self.conv11_offset(feature_f0)
-
-            feature_f1=self.conv11(feature_f0,offset1)
-
-            offset2=self.conv12_offset(feature_f1)
-
-            feature_f2=self.conv12(feature_f1,offset2)
-
-            offset3=self.conv13_offset(feature_f2)
-
-            feature_f3=self.conv13(feature_f2,offset3)
-
-            offset=self.conv14_offset(feature_f3)
-
-            feature=self.conv14(support,offset)
-
-            
-            return feature,offset
-
-    def agg2(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            print('module')
-        else:
-            offset1=self.conv21_offset(feature_f0)
-
-            feature_f1=self.conv21(feature_f0,offset1)
-
-            offset2=self.conv22_offset(feature_f1)
-
-            feature_f2=self.conv22(feature_f1,offset2)
-
-            offset=self.conv23_offset(feature_f2)
-            feature=self.conv23(support,offset)
-            return feature,offset
-
-    def agg3(self,support,reference,test=False):
-
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            print('module')
-        else:
-            offset1=self.conv31_offset(feature_f0)
-
-            feature_f1=self.conv31(feature_f0,offset1)
-
-            offset2=self.conv32_offset(feature_f1)
-
-            feature_f2=self.conv32(feature_f1,offset2)
-
-            offset=self.conv33_offset(feature_f2)
-            feature=self.conv33(support,offset)
-            return feature,offset
-    def agg4(self,support,reference,test=False):
-        
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            print('module')
-        else:
-            offset1=self.conv41_offset(feature_f0)
-
-            feature_f1=self.conv41(feature_f0,offset1)
-
-            offset=self.conv42_offset(feature_f1)
-            feature=self.conv42(support,offset)
-            return feature,offset
-    def agg5(self,support,reference,test=False):
-        
-        feature_f0=torch.cat([support,reference],dim=1)
-
-        if self.with_modulated_dcn:
-            print('module')
-        else:
-            offset1=self.conv51_offset(feature_f0)
-
-            feature_f1=self.conv51(feature_f0,offset1)
-
-            offset=self.conv52_offset(feature_f1)
-            feature=self.conv52(support,offset)
-            return feature,offset
     def points2bbox(self, pts, y_first=True):
         """
         Converting the points set into bounding box.
@@ -533,36 +250,14 @@ class RepPointsHead(nn.Module):
         ], 1)
         return grid_yx, regressed_bbox
 
-    def forward_single(self, x,index,test=False):
-        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
-        self.cls_weight=[self.cls_weight1,self.cls_weight2,self.cls_weight3,self.cls_weight4,self.cls_weight5]
-        # self.reg_weight=[self.reg_weight1,self.reg_weight2,self.reg_weight3,self.reg_weight4,self.reg_weight5]
+    def forward_single(self, x):
+
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
         #   from regular grid placed on a pre-defined bbox.
         # print(dcn_base_offset.view(-1))
         # exit()
-
-        # print(x.shape)
-        # print(index)
-        support_count=2
-        select_id=[]
-        for i in range(support_count):
-            select_id.append([])
-        # select_id[0]=torch.arange(x.shape[0])-2
-        # select_id[0]=torch.where(select_id[0]<0,torch.arange(x.shape[0]),select_id[0])
-        # select_id[1]=torch.arange(x.shape[0])+2
-        # select_id[1]=torch.where(select_id[1]>=x.shape[0],torch.arange(x.shape[0]),select_id[1])
-
-        
-        select_id[0]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[0][select_id[0]==np.arange(x.shape[0])]=select_id[0][select_id[0]==np.arange(x.shape[0])]-1
-        select_id[1]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[1][select_id[1]==np.arange(x.shape[0])]=select_id[1][select_id[1]==np.arange(x.shape[0])]-1
-        offsets=[]
-
-
         points_init = 0
         cls_feat = x
         pts_feat = x
@@ -570,11 +265,9 @@ class RepPointsHead(nn.Module):
             cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
             pts_feat = reg_conv(pts_feat)
-
         # initialize reppoints
-        pts_init_feature=self.relu(self.reppoints_pts_init_conv(pts_feat))
-        pts_out_init = self.reppoints_pts_init_out(pts_init_feature)
-
+        pts_out_init = self.reppoints_pts_init_out(
+            self.relu(self.reppoints_pts_init_conv(pts_feat)))
         pts_out_init = pts_out_init + points_init
         # refine and classify reppoints
         #control the grad between two loss,0.1 valid grad
@@ -583,61 +276,25 @@ class RepPointsHead(nn.Module):
         ) + self.gradient_mul * pts_out_init
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
-        if test:
-            self.reppoints.append(dcn_offset.data.cpu().numpy())
-        cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
-        # cls_out = self.reppoints_cls_out(cls_out_feature)        
-
-        pts_refine_feature=self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset))
-        pts_out_refine = self.reppoints_pts_refine_out(pts_refine_feature)
+        self.reppoints.append(dcn_offset.data.cpu().numpy())
+        
+        cls_out = self.reppoints_cls_out(
+            self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset)))
+        pts_out_refine = self.reppoints_pts_refine_out(
+            self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
+        # print(cls_out.shape)
+        # if dcn_offset.shape[-1]==156:
+        #     self.init_offset=dcn_offset
+        #     self.refine_offset=pts_out_refine- dcn_base_offset
+        # np.save('/home/ld/RepPoints/offset/init'+str(dcn_offset.shape[-1])+'.npy',dcn_offset.data.cpu().numpy())
+        return cls_out, pts_out_init, pts_out_refine
 
-        if not test:
-            reference=cls_out_feature+0
-            refer_weight_f=self.cls_weight[index](reference)
-            weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
-            feature=reference.unsqueeze(1)
-            for j in range(support_count):
-                support=cls_out_feature[select_id[j],:,:,:]
-                tk_feature,_=self.agg[index](support,reference)
-                weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
-                weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-            weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
-            agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
-            agg_cls_out = self.reppoints_cls_out(agg_feature)
-        else:
-            reference=cls_out_feature[:1,...]
-            refer_weight_f=self.cls_weight[index](reference)
-            weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
-            feature=reference.unsqueeze(1)
-            tmp_offset=[]
-            for j in range(support_count):
-                support=cls_out_feature[j+1:j+2,:,:,:]
-                tk_feature,tk_offset=self.agg[index](support,reference)
-                weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
-                weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-                tmp_offset.append(tk_offset.data.cpu().numpy())
-            weight=torch.nn.functional.softmax(weight0,dim=1)
-            agg_feature=torch.sum(feature*weight,dim=1)
-            agg_cls_out = self.reppoints_cls_out(agg_feature)
-            self.offset.append(tmp_offset)
-        if not test:
-            return agg_cls_out, pts_out_init, pts_out_refine
-        else:
-            return agg_cls_out, pts_out_init[:1,...], pts_out_refine[:1,...]
-
-    def forward(self, feats,test=False):
+    def forward(self, feats):
         #5 feature map
-        self.offset=[]
         self.reppoints=[]
-        outs=multi_apply(self.forward_single, feats,[0,1,2,3,4],[test for i in range(5)])
-        # outs=[]
-        # for i in range(len(feats)):
-        #     outs.append(self.forward_single(feats[i],i))
-        # outs=tuple(outs)
+        outs=multi_apply(self.forward_single, feats)
         return outs
 
     def get_points(self, featmap_sizes, img_metas):
@@ -1000,3 +657,4 @@ class RepPointsHead(nn.Module):
                 return det_bboxes, det_labels,torch.stack(det_index,dim=0)
         else:
             return mlvl_bboxes, mlvl_scores
+

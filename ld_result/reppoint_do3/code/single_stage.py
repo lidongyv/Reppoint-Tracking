@@ -82,7 +82,8 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes_ignore=None):
         
         x = self.extract_feat(img)
-        # print(img.shape)
+        
+        print(img.shape)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         losses = self.bbox_head.loss(
@@ -93,24 +94,25 @@ class SingleStageDetector(BaseDetector):
     def simple_test(self, img, img_meta, rescale=False):
 
         print('single test')
-
+        print(img.shape)
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        index=self.index
         index=True
         bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-        if index:
-            box_loc=bbox_list[0][2]
-            bbox_list=[bbox_list[0][:2]]
+        # print(bbox_list[0][2])
+        # print(bbox_list[0][:2])
+        # # print(bbox_results)
+        # exit()
+        box_loc=bbox_list[0][2]
+        bbox_list=[bbox_list[0][:2]]
+
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-        if index:
-            return bbox_results[0],box_loc
-        else:
-            return bbox_results[0]
+        loc_results = loc2result(box_loc, bbox_list[0][1], self.bbox_head.num_classes)
+        return bbox_results[0],loc_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

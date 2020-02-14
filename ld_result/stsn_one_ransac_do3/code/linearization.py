@@ -131,17 +131,17 @@ class LinearizedMutilSampler():
         assert isinstance(grid, torch.Tensor), 'cannot process data type: {0}'.format(type(grid))
         self.input=input
         self.grid=grid
-        # self.refer=refer
+        self.refer=refer
         batch_size, source_channels, source_height, source_width = input.shape
         #sigma on height and width
         least_offset = torch.tensor([2.0 / source_width, 2.0 / source_height], device=grid.device)
         auxiliary_grid = self.create_auxiliary_grid(grid, least_offset)
         warped_input = self.warp_input_with_auxiliary_grid(input, auxiliary_grid, padding_mode)
-        out,grad = self.linearized_fitting(warped_input, auxiliary_grid,refer)
+        out,grad = self.linearized_fitting(warped_input, auxiliary_grid)
         return out,grad
 
     @classmethod
-    def linearized_fitting(self, input, grid,refer):
+    def linearized_fitting(self, input, grid):
         def defensive_assert(input, grid):
             assert len(input.shape) == 5, 'shape should be: B x grid x C x H x W'
             assert len(grid.shape) == 5, 'shape should be: B x grid x H x W x XY'
@@ -202,7 +202,7 @@ class LinearizedMutilSampler():
         defensive_assert(input, grid)
         extracted_dict = get_center_and_other(input, grid)
         #return detla value and delta distance
-        delta_vals = self.get_delta_vals(self,extracted_dict,refer)
+        delta_vals = self.get_delta_vals(extracted_dict)
         center_image = extracted_dict['center_image']
         #B, H, W, XY
         center_grid = extracted_dict['center_grid']
@@ -252,12 +252,12 @@ class LinearizedMutilSampler():
         #A:[B, H, W, C,3],X:[B,H,W,3,1],X0:BCHW
         image_linearized = torch.matmul(gradient_intensity_stop.transpose(3, 4), (center_grid_xyz - center_grid_xyz_stop))[..., 0].permute(0, 3, 1, 2) + center_image[:, 0]
         #need to resample on the points with the grad
-        # image_linearized=(resample(gradient_intensity_stop)+image_linearized)/2
+        image_linearized=(resample(gradient_intensity_stop)+image_linearized)/2
         # image_linearized=resample(gradient_intensity_stop)
         return image_linearized,gradient_intensity_stop.transpose(3, 4)
 
     @staticmethod
-    def get_delta_vals(self,data_dict,refer):
+    def get_delta_vals(data_dict):
         def defensive_assert(center_image, other_image):
             assert len(center_image.shape) == 5, 'shape should be: B x grid x C x H x W'
             assert len(other_image.shape) == 5, 'shape should be: B x grid x C x H x W'
@@ -272,7 +272,7 @@ class LinearizedMutilSampler():
         other_image = data_dict['other_image']
         other_grid = data_dict['other_grid']
         defensive_assert(center_image, other_image)
-        refer_img=refer.unsqueeze(1)+0
+        refer_img=self.refer.unsqueeze(1)+0
         batch_size = other_image.shape[0]
         num_other_image = other_image.shape[1]
         center_image_batch = center_image.repeat([1, num_other_image, 1, 1, 1])

@@ -143,11 +143,53 @@ def main():
 	model.train()
 	if hasattr(model, 'module'):
 		model_load = model.module
+	optimizer_rep = obj_from_dict(cfg.optimizer, torch.optim,
+							 dict(params=model_load.bbox_head.parameters()))
+	# optimizer = obj_from_dict(cfg.optimizer, torch.optim,
+	# 						 dict(params=model_load.agg.parameters()))
 	optimizer_all=obj_from_dict(cfg.optimizer, torch.optim,
 							 dict(params=model_load.parameters()))
-
+	optimizer = obj_from_dict(cfg.optimizer, torch.optim,
+							 dict(params=list(model_load.bbox_head.conv11_offset.parameters())+ \
+								         list(model_load.bbox_head.conv11.parameters())+ \
+									 	 list(model_load.bbox_head.conv12_offset.parameters())+ \
+								         list(model_load.bbox_head.conv12.parameters())+ \
+									 	 list(model_load.bbox_head.conv13_offset.parameters())+ \
+								         list(model_load.bbox_head.conv13.parameters())+ \
+										 list(model_load.bbox_head.conv14_offset.parameters())+ \
+								        #  list(model_load.bbox_head.conv14.parameters())+ \
+										 list(model_load.bbox_head.conv21_offset.parameters())+ \
+								         list(model_load.bbox_head.conv21.parameters())+ \
+									 	 list(model_load.bbox_head.conv22_offset.parameters())+ \
+								         list(model_load.bbox_head.conv22.parameters())+ \
+									 	 list(model_load.bbox_head.conv23_offset.parameters())+ \
+								        #  list(model_load.bbox_head.conv23.parameters())+ \
+										 list(model_load.bbox_head.conv31_offset.parameters())+ \
+								         list(model_load.bbox_head.conv31.parameters())+ \
+									 	 list(model_load.bbox_head.conv32_offset.parameters())+ \
+								         list(model_load.bbox_head.conv32.parameters())+ \
+									 	 list(model_load.bbox_head.conv33_offset.parameters())+ \
+								        #  list(model_load.bbox_head.conv33.parameters())+ \
+										 list(model_load.bbox_head.conv41_offset.parameters())+ \
+								         list(model_load.bbox_head.conv41.parameters())+ \
+									 	 list(model_load.bbox_head.conv42_offset.parameters())+ \
+								        #  list(model_load.bbox_head.conv42.parameters())+ \
+										 list(model_load.bbox_head.conv51_offset.parameters())+ \
+								         list(model_load.bbox_head.conv51.parameters())+ \
+									 	 list(model_load.bbox_head.conv52_offset.parameters())+ \
+								        #  list(model_load.bbox_head.conv52.parameters())+ \
+										#  list(model_load.bbox_head.reg_weight1.parameters())+ \
+										#  list(model_load.bbox_head.reg_weight2.parameters())+ \
+										#  list(model_load.bbox_head.reg_weight3.parameters())+ \
+										#  list(model_load.bbox_head.reg_weight4.parameters())+ \
+										#  list(model_load.bbox_head.reg_weight5.parameters())+ \
+										 list(model_load.bbox_head.cls_weight1.parameters())+ \
+										 list(model_load.bbox_head.cls_weight2.parameters())+ \
+										 list(model_load.bbox_head.cls_weight3.parameters())+ \
+										 list(model_load.bbox_head.cls_weight4.parameters())+ \
+										 list(model_load.bbox_head.cls_weight5.parameters())
+									 ))
 	check_video=None
-
 	try:
 		start_epoch=checkpoint['epoch']+1
 	except:
@@ -155,14 +197,31 @@ def main():
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='reppoint')
+	vis = visdom.Visdom(env='stsnbilinear')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
 									ylabel='Loss of classification',
 									title='Loss of classification ',
 									legend=['Loss of classification']))
-
+	# loss_cls_window2 = vis.line(X=torch.zeros((1,)).cpu(),
+	# 					Y=torch.zeros((1)).cpu(),
+	# 					opts=dict(xlabel='minibatches',
+	# 								ylabel='Loss of classification2',
+	# 								title='Loss of classification2 ',
+	# 								legend=['Loss of classification2']))
+	# loss_cls_window3 = vis.line(X=torch.zeros((1,)).cpu(),
+	# 					Y=torch.zeros((1)).cpu(),
+	# 					opts=dict(xlabel='minibatches',
+	# 								ylabel='Loss of classification3',
+	# 								title='Loss of classification3 ',
+	# 								legend=['Loss of classification3']))
+	# loss_cls_window4 = vis.line(X=torch.zeros((1,)).cpu(),
+	# 					Y=torch.zeros((1)).cpu(),
+	# 					opts=dict(xlabel='minibatches',
+	# 								ylabel='Loss of classification4',
+	# 								title='Loss of classification4 ',
+	# 								legend=['Loss of classification4']))
 	loss_init_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -181,7 +240,12 @@ def main():
 									ylabel='Loss all',
 									title='Loss all',
 									legend=['Loss all']))
-
+	# loss_trans_window = vis.line(X=torch.zeros((1,)).cpu(),
+	# 					Y=torch.zeros((1)).cpu(),
+	# 					opts=dict(xlabel='minibatches',
+	# 								ylabel='Loss trans',
+	# 								title='Loss trans',
+	# 								legend=['Loss trans']))
 	training_sample=0
 	for e in range(cfg.total_epochs):
 		i=0
@@ -209,15 +273,34 @@ def main():
 			print('start image:',data['img_meta'].data[0][0]['filename'])
 			print('end image:',data['img_meta'].data[-1][-1]['filename'])
 
-
+			for m in range(len(data['img_meta'].data)):
+				start_name=data['img_meta'].data[m][0]['filename'].split('/')[-2]
+				for n in range(len(data['img_meta'].data[m])):
+					check_name=data['img_meta'].data[m][n]['filename'].split('/')[-2]
+					if start_name!=check_name:
+						print('end of video')
+						data['img_meta'].data[m][n]=data['img_meta'].data[m][0]
+						data['gt_bboxes'].data[m][n]=data['gt_bboxes'].data[m][0]
+						data['gt_labels'].data[m][n]=data['gt_labels'].data[m][0]
+						data['img'].data[m][n]=data['img'].data[m][0]
+			# if i==0:
+			# 	data0=data
+			# else:
+			# 	data=data0
 			losses=model(return_loss=True, **data)
 			losses, log_vars = parse_losses(losses)
+			# losses.backward()
+			# optimizer_all.step()
 			losses.backward()
-			optimizer_all.step()
+			optimizer.step()
+			# if epoch<10:
+			# 	losses.backward()
+			# 	optimizer.step()
+			# else:
+			# 	losses.backward()
+			# 	optimizer_all.step()
 
-
-
-			print('refer computation time:',time.time()-start_time)
+			print('agg','computation time:',time.time()-start_time)
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
 					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
 						'loss_refine_box:',log_vars['loss_pts_refine'])

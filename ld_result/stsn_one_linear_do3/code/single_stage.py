@@ -96,22 +96,21 @@ class SingleStageDetector(BaseDetector):
 
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
+        index=self.index
         index=True
         bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
-        # print(bbox_list[0][2])
-        # print(bbox_list[0][:2])
-        # # print(bbox_results)
-        # exit()
-        box_loc=bbox_list[0][2]
-        bbox_list=[bbox_list[0][:2]]
-
+        if index:
+            box_loc=bbox_list[0][2]
+            bbox_list=[bbox_list[0][:2]]
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-        loc_results = loc2result(box_loc, bbox_list[0][1], self.bbox_head.num_classes)
-        return bbox_results[0],loc_results
+        if index:
+            return bbox_results[0],box_loc
+        else:
+            return bbox_results[0]
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/stsn_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_nine_do3/epoch_30.pth'
+config_file ='/home/ld/RepPoints/configs/reppoints_moment_r101_dcn_fpn_kitti_agg_fuse_st.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -65,19 +65,17 @@ if cfg.get('cudnn_benchmark', False):
 cfg.model.pretrained = None
 cfg.data.test.test_mode = True
 dataset = build_dataset(cfg.data.test)
-data_path='/backdata01/'
-jsonfile_name='kitti_bdd_waymo_2class_val_13.json'
+data_path='/backdata01/KITTI/kitti/tracking'
+jsonfile_name='kitti_val_3class.json'
 # test a video and show the results
 with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
 support_count=2
-support_num=5
-out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/stsn_nine_do3/epoch_30_thres0.1_nms0.5_support_'+str(support_num)
+out_name='agg'
+out_path='/home/ld/RepPoints/ld_result/stsn_class_learn/epoch_9_thres0.1_nms0.5_with2'
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
-if not os.path.exists(os.path.join(out_path,out_name)):
 	os.mkdir(os.path.join(out_path,out_name))
 results=[]
 video_length=0
@@ -87,11 +85,8 @@ result_record=[]
 eval_data=[]
 
 loc_data=[]
-reppooints_data=[[] for i in range(5)]
 offset_data=[[] for i in range(5)]
 offset_data=[offset_data.copy(),offset_data.copy()]
-
-
 img_record=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
@@ -99,9 +94,9 @@ scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
 # load and test
 
-# result_record=mmcv.load(os.path.join(out_path,'agg/det_result.pkl'))
+# result_record=mmcv.load(os.path.join(out_path,'det_result.pkl'))
 # print('evaluating result of support', )
-
+# print(result_record)
 # kitti_eval(result_record, dataset)
 # exit()
 
@@ -111,7 +106,6 @@ model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
 model.CLASSES = dataset.CLASSES
 # result_record=[]
-
 for i,(frame) in enumerate(data):
 	print(i,'in',len(data))
 	video_name=frame['video_id']
@@ -130,34 +124,54 @@ for i,(frame) in enumerate(data):
 	img_list=[img]
 
 
-	if data[i-1]['video_id']==video_name and data[i-support_num]['video_id']==video_name:
-		img_list.append(os.path.join(data_path,data[i-1]['filename']))
-		img_list.append(os.path.join(data_path,data[i-support_num]['filename']))
+	if data[i-2]['video_id']==video_name:
+		img_list.append(os.path.join(data_path,data[i-2]['filename']))
 	else:
-		img_list.append(os.path.join(data_path,data[i+1]['filename']))
-		img_list.append(os.path.join(data_path,data[i+support_num]['filename']))
-
+		img_list.append(os.path.join(data_path,data[i]['filename']))
+		print('start')
+	if i+2>=len(data):
+		img_list.append(os.path.join(data_path,data[i]['filename']))
+	else:
+		if data[i+2]['video_id']==video_name:
+			img_list.append(os.path.join(data_path,data[i+2]['filename']))
+		else:
+			img_list.append(os.path.join(data_path,data[i]['filename']))
+			print('end')
 	img_record.append(img_list)
 	result = inference_trackor(model, img_list)
-	reppoint_t=model.bbox_head.reppoints
 	offset_t=model.bbox_head.offset
+ 
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
 	loc_data.append(loc_result)
-	for m in range(len(reppoint_t)):
-		reppooints_data[m].append(reppoint_t[m])
 	for m in range(len(offset_t)):
 		for n in range(len(offset_t[m])):
 			offset_data[n][m].append(offset_t[m][n])
 
+	# loc_result=loc_result.long()
+	# #four value and one score
+	# bboxes = np.vstack(bbox_result)
+	# scores = bboxes[:, -1]
+	# inds = scores > 0
+	# scores=bboxes[inds, :][:,4:]
+	# bboxes = bboxes[inds, :][:,:4]
 
-
+	# labels = [
+	# 	np.full(bbox.shape[0], i, dtype=np.int32)
+	# 	for i, bbox in enumerate(bbox_result)
+	# ]
+	# labels = np.concatenate(labels)
+	# labels = labels[inds]
+	# frame_data={"video_id":frame['video_id'],"filename":os.path.join(frame['filename']), \
+	# 	"ann":{"bboxes":bboxes.tolist(),"labels":labels.tolist(), \
+	# 		"track_id":labels.tolist(),'score':scores.tolist()}}
+	# eval_data.append(frame_data)
 mmcv.dump(img_record, os.path.join(out_path,out_name,'images.pkl'))
-mmcv.dump(offset_data, os.path.join(out_path,out_name,'offsets.pkl'))
+mmcv.dump(offset_data, os.path.join(out_path,out_name,'offset.pkl'))
+# exit()
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
-mmcv.dump(reppooints_data, os.path.join(out_path,out_name,'reppoints.pkl'))
 
 
 print('evaluating result of ', out_name)

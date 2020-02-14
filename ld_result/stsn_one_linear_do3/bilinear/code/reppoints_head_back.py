@@ -11,7 +11,7 @@ from mmdet.ops import DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob
-from .linearization import *
+from linearization import *
 
 @HEADS.register_module
 class RepPointsHead(nn.Module):
@@ -600,13 +600,11 @@ class RepPointsHead(nn.Module):
         # select_id[1]=torch.arange(x.shape[0])+2
         # select_id[1]=torch.where(select_id[1]>=x.shape[0],torch.arange(x.shape[0]),select_id[1])
 
-        select_id[0]=np.arange(x.shape[0])-1
-        select_id[0]=np.where(select_id[0]<0,np.arange(x.shape[0])+1,select_id[0])
+        select_id[0]=torch.arange(x.shape[0])-1
+        select_id[0]=torch.where(select_id[0]<0,torch.arange(x.shape[0])+1,select_id[0])
         select_id[1]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
         select_id[1][select_id[1]==np.arange(x.shape[0])]=select_id[1][select_id[1]==np.arange(x.shape[0])]-2
         step=(select_id[1]-np.arange(x.shape[0]))/(select_id[0]-np.arange(x.shape[0]))
-        step=torch.from_numpy(step).to(x.device).view(x.shape[0],1,1,1).float()
-
         offsets=[]
         reference=x+0
         # for j in range(support_count):
@@ -689,73 +687,54 @@ class RepPointsHead(nn.Module):
             weight0=torch.cat([weight0,weight],dim=1)
             feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
             
-
-            #plan A
-            #compute the deformation from refer to support
+            #inv offset to warp reference by tht init offset
             inv_offset=self.agg[index](reference,support)
-            grid_cls_init=grid_init+0
-            grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+inv_offset[:,1,:,:]/reference.shape[-1]
-            grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+inv_offset[:,0,:,:]/reference.shape[-2]
-            _,grad = grid_sample(reference,support, grid_cls_init,mode='linearized')
+            #forward backward check
+            #add loss
+            
+            
+            #plan A
             #use the init offset, warp the reference by grad
             support=cls_out_feature[select_id[1],:,:,:]
             offset_xy=(inv_offset+0)*step
             offset_xy[:,1,:,:]=offset_xy[:,1,:,:]/reference.shape[-1]
             offset_xy[:,0,:,:]=offset_xy[:,0,:,:]/reference.shape[-2]
-            offset_xy=torch.cat([offset_xy[:,1:2,:,:],offset_xy[:,0:1,:,:],torch.ones_like(offset_xy[:,1:2,:,:])],dim=1).permute(0,2,3,1).unsqueeze(-1)
+            offset_xy=torch.cat([offset_xy[:,1:2,:,:],offset_xy[:,0:1,:,:]],dim=1)
             #A:[B, H, W, C,3],X:[B,H,W,3,1],X0:BCHW
             #change the reference feature by step
-            image_linearized = torch.matmul(grad, offset_xy)[..., 0].permute(0, 3, 1, 2) + reference
-            #can also balance with the first support
-            #
+            image_linearized = torch.matmul(grad, torch.cat([offset_xy,torch.ones_like(offset_xy[...,:1])],dim=-1))[..., 0].permute(0, 3, 1, 2) + reference
             support=cls_out_feature[select_id[1],:,:,:]
-            #search on the support by the warped feature
-            offset_xy=(inv_offset+0)*step
+            #warp the reference feature by step
             grid_cls_inv=grid_init+0
-            grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+offset_xy[:,1,:,:]/reference.shape[-1]
-            grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+offset_xy[:,0,:,:]/reference.shape[-2]
-            offset_xy=-torch.nn.functional.grid_sample(offset_xy,grid_cls_inv)+0
+            grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+offset_xy[:,0,:,:]
+            grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+offset_xy[:,1,:,:]
+            image_linearized,_=grid_sample(image_linearized,image_linearized, grid_cls_inv,mode='linearized')
+            #search on the support by the warped feature
+            offset_xy=(offset+0)*step
             offset=self.agg[index](support,image_linearized)
             grid_cls_init=grid_init+0
             grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]+offset_xy[:,1,:,:]/reference.shape[-1]
             grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]+offset_xy[:,0,:,:]/reference.shape[-2]
-            tk_feature,_ = grid_sample(support,image_linearized, grid_cls_init,mode='linearized')
+            tk_feature,grad = grid_sample(support,image_linearized, grid_cls_init,mode='linearized')
             weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
             weight0=torch.cat([weight0,weight],dim=1)
             feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
             
             # #plan B
-            
-            # #inv offset to warp reference by tht init offset
-            # inv_offset=self.agg[index](reference,support)
-            # # grid_cls_init=grid_init+0
-            # # grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+inv_offset[:,1,:,:]/reference.shape[-1]
-            # # grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+inv_offset[:,0,:,:]/reference.shape[-2]
-            # # _,grad = grid_sample(reference,reference, grid_cls_init,mode='linearized')
-            # #forward backward check
-            # #add loss
-            # #
-            
             # #use the init offset, warp the reference by offset
             # #warp the reference by the offset
             # support=cls_out_feature[select_id[1],:,:,:]
-            # # print(step.shape,inv_offset.shape)
-            # # torch.Size([10]) torch.Size([10, 2, 52, 160])
-            # offset_xy=(inv_offset+0)*step.float()
+            # offset_xy=(inv_offset+0)*step
             # grid_cls_inv=grid_init+0
-            # grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+offset_xy[:,1,:,:]/reference.shape[-1]
-            # grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+offset_xy[:,0,:,:]/reference.shape[-2]
+            # grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+inv_offset[:,1,:,:]/reference.shape[-1]
+            # grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+inv_offset[:,0,:,:]/reference.shape[-2]
             # image_linearized,_=grid_sample(reference+0,reference+0, grid_cls_inv,mode='linearized')
-            # #warp the warped reference back
-            
-            # offset_xy=-torch.nn.functional.grid_sample(offset_xy,grid_cls_inv)+0
-            # # offset_xy=-offset_xy[:,:,grid_cls_inv[...,1],grid_cls_inv[...,0]]
+            # offset_xy=(offset+0)*step
             # support=cls_out_feature[select_id[1],:,:,:]
             # offset=self.agg[index](support,image_linearized)
             # grid_cls_init=grid_init
             # grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]+offset_xy[:,1,:,:]/reference.shape[-1]
             # grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]+offset_xy[:,0,:,:]/reference.shape[-2]
-            # # print(support.device,image_linearized.device,grid_cls_init.device)
             # tk_feature,_ = grid_sample(support,image_linearized, grid_cls_init,mode='linearized')
             # weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
             # weight0=torch.cat([weight0,weight],dim=1)

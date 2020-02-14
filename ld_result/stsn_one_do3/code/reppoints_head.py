@@ -707,7 +707,7 @@ class RepPointsHead(nn.Module):
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
                 tmp_offset.append(offset.data.cpu().numpy())
-            self.offset=tmp_offset
+            self.offset.append(tmp_offset)
             weight=torch.nn.functional.softmax(weight0,dim=1)
             agg_feature=torch.sum(feature*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
@@ -717,7 +717,7 @@ class RepPointsHead(nn.Module):
     def forward(self, feats,test=False):
         #5 feature map
         self.reppoints=[]
-        self.offsets=[]
+        self.offset=[]
         outs=multi_apply(self.forward_single, feats,[0,1,2,3,4],[test for i in range(5)])
         # outs=[]
         # for i in range(len(feats)):

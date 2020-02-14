@@ -108,8 +108,8 @@ test_pipeline = [
 #5*8:1.42
 #10*8:2.5
 data = dict(
-    imgs_per_gpu=10,
-    workers_per_gpu=10,
+    imgs_per_gpu=8,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
         ann_file='/backdata01/kitti_bdd_waymo_2class.json',
@@ -149,8 +149,8 @@ total_epochs = 10
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/stsn_one_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+work_dir = '/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear'
+load_from='/home/ld/RepPoints/ld_result/stsn_one_do3/epoch_30.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'

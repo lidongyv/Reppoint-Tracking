@@ -699,22 +699,23 @@ class RepPointsHead(nn.Module):
             _,grad = grid_sample(reference,support, grid_cls_init,mode='linearized')
             #use the init offset, warp the reference by grad
             support=cls_out_feature[select_id[1],:,:,:]
-            offset_xy=(inv_offset+0)*step
-            offset_xy[:,1,:,:]=offset_xy[:,1,:,:]/reference.shape[-1]
-            offset_xy[:,0,:,:]=offset_xy[:,0,:,:]/reference.shape[-2]
-            offset_xy=torch.cat([offset_xy[:,1:2,:,:],offset_xy[:,0:1,:,:],torch.ones_like(offset_xy[:,1:2,:,:])],dim=1).permute(0,2,3,1).unsqueeze(-1)
+            inv_offset_xy=(inv_offset+0)*step
+            inv_offset_xy[:,1,:,:]=inv_offset_xy[:,1,:,:]/reference.shape[-1]
+            inv_offset_xy[:,0,:,:]=inv_offset_xy[:,0,:,:]/reference.shape[-2]
+            inv_offset_xy=torch.cat([inv_offset_xy[:,1:2,:,:],inv_offset_xy[:,0:1,:,:],torch.ones_like(inv_offset_xy[:,1:2,:,:])],dim=1).permute(0,2,3,1).unsqueeze(-1)
             #A:[B, H, W, C,3],X:[B,H,W,3,1],X0:BCHW
             #change the reference feature by step
-            image_linearized = torch.matmul(grad, offset_xy)[..., 0].permute(0, 3, 1, 2) + reference
+            image_linearized = torch.matmul(grad, inv_offset_xy)[..., 0].permute(0, 3, 1, 2) + reference
             #can also balance with the first support
             #
             support=cls_out_feature[select_id[1],:,:,:]
             #search on the support by the warped feature
-            offset_xy=(inv_offset+0)*step
-            grid_cls_inv=grid_init+0
-            grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+offset_xy[:,1,:,:]/reference.shape[-1]
-            grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+offset_xy[:,0,:,:]/reference.shape[-2]
-            offset_xy=-torch.nn.functional.grid_sample(offset_xy,grid_cls_inv)+0
+            # offset_xy=(inv_offset+0)*step
+            # grid_cls_inv=grid_init+0
+            # grid_cls_inv[:,:,:,0]=grid_cls_inv[:,:,:,0]+offset_xy[:,1,:,:]/reference.shape[-1]
+            # grid_cls_inv[:,:,:,1]=grid_cls_inv[:,:,:,1]+offset_xy[:,0,:,:]/reference.shape[-2]
+            # offset_xy=-torch.nn.functional.grid_sample(offset_xy,grid_cls_inv)+0
+            offset_xy=(offset+0)*step
             offset=self.agg[index](support,image_linearized)
             grid_cls_init=grid_init+0
             grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]+offset_xy[:,1,:,:]/reference.shape[-1]

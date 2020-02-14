@@ -148,7 +148,10 @@ def main():
 
 	check_video=None
 
-	start_epoch=0
+	try:
+		start_epoch=checkpoint['epoch']+1
+	except:
+		start_epoch=0
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
