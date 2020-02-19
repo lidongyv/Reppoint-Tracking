@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv

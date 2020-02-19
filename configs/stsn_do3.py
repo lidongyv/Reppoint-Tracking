@@ -65,7 +65,7 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.1,
+    score_thr=0.3,
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
@@ -77,12 +77,40 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
 	dict(type='Resize', img_scale=(1280, 720), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='RandomFlip', flip_ratio=0),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(720, 1280),size_divisor=32),
+    dict(type='Pad', size=(720, 1280),size_divisor=256),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
+
+# train_pipeline = [
+#     dict(type='LoadImageFromFile'),
+#     dict(type='LoadAnnotations', with_bbox=True),
+# 	dict(type='Resize', img_scale=(768, 256), keep_ratio=True),
+#     dict(type='RandomFlip', flip_ratio=0.5),
+#     dict(type='Normalize', **img_norm_cfg),
+#     dict(type='Pad', size=(256, 768),size_divisor=32),
+#     dict(type='DefaultFormatBundle'),
+#     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+# ]
+
+# test_pipeline = [
+#     dict(type='LoadImageFromFile'),
+#     dict(
+#         type='MultiScaleFlipAug',
+#         img_scale=(1280, 720),
+#         flip=False,
+#         transforms=[
+#             dict(type='Resize', keep_ratio=True),
+#             dict(type='RandomFlip'),
+#             dict(type='Normalize', **img_norm_cfg),
+#             dict(type='Pad', size=(720, 1280),size_divisor=32),
+#             dict(type='ImageToTensor', keys=['img']),
+#             dict(type='Collect', keys=['img']),
+#         ])
+# ]
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
@@ -93,11 +121,12 @@ test_pipeline = [
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size=(720, 1280),size_divisor=32),
+            dict(type='Pad', size=(720, 1280),size_divisor=256),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
 ]
+
 #one card time:0.125s one frame
 #20:2.81
 #18:2.52
@@ -108,11 +137,11 @@ test_pipeline = [
 #5*8:1.42
 #10*8:2.5
 data = dict(
-    imgs_per_gpu=10,
-    workers_per_gpu=10,
+    imgs_per_gpu=3,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
-        ann_file='/backdata01/kitti_bdd_waymo_2class.json',
+        ann_file='/backdata01/temp_5.json',
         img_prefix=data_root,
         pipeline=train_pipeline),
     val=dict(
@@ -145,12 +174,13 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 10
+total_epochs = 20
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/stsn_nine_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+work_dir = '/home/ld/RepPoints/ld_result/stsn_one_do3'
+# load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+load_from='/home/ld/RepPoints/ld_result/stsn_one_do3/epoch_31.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'

@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -57,7 +57,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoint_baseline_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33.pth'
+
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -73,7 +74,8 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20_thres0.1_nms0.5'
+out_path='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33_thres0.3_nms0.5'
+print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	os.mkdir(os.path.join(out_path,out_name))

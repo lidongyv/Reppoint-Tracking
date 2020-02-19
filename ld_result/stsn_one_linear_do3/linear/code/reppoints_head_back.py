@@ -642,7 +642,7 @@ class RepPointsHead(nn.Module):
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
         if test:
-            self.reppoints=dcn_offset.data.cpu().numpy()
+            self.reppoints.append(dcn_offset.data.cpu().numpy())
         cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # cls_out = self.reppoints_cls_out(cls_out_feature)        
 

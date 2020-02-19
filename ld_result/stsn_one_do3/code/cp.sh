@@ -5,3 +5,4 @@ cp ./test_custom.py /home/ld/RepPoints/mmdetection/tools/test_custom.py
 cp ./train_custom.py /home/ld/RepPoints/mmdetection/tools/train_custom.py
 cp ./tracker_train.sh /home/ld/RepPoints/tracker_train.sh
 cp ./test.sh /home/ld/RepPoints/test.sh
+cp ./test_custom_add.py /home/ld/RepPoints/mmdetection/tools/test_custom_add.py

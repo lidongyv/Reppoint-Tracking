@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -86,7 +86,7 @@ eval_data=[]
 
 loc_data=[]
 offset_data=[[] for i in range(5)]
-offset_data=[offset_data.copy(),offset_data.copy()]
+offset_data=[copy.deepcopy(offset_data),copy.deepcopy(offset_data)]
 img_record=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}

@@ -289,10 +289,10 @@ def main():
 			# 	data=data0
 			losses=model(return_loss=True, **data)
 			losses, log_vars = parse_losses(losses)
-			# losses.backward()
-			# optimizer_all.step()
 			losses.backward()
-			optimizer.step()
+			optimizer_all.step()
+			# losses.backward()
+			# optimizer.step()
 			# if epoch<10:
 			# 	losses.backward()
 			# 	optimizer.step()

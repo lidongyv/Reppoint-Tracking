@@ -641,7 +641,7 @@ class RepPointsHead(nn.Module):
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
         if test:
-            self.reppoints=dcn_offset.data.cpu().numpy()
+            self.reppoints.append(dcn_offset.data.cpu().numpy())
         cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # cls_out = self.reppoints_cls_out(cls_out_feature)        
 
@@ -728,12 +728,6 @@ class RepPointsHead(nn.Module):
             #inv offset to warp reference by tht init offset
             inv_offset=self.agg[index](reference,support)
             temp_inv_offset.append(inv_offset.data.cpu().numpy())
-
-            #forward backward check
-            #add loss
-            #
-            #use the init offset, warp the reference by offset
-            #warp the reference by the offset
             
             # print(step.shape,inv_offset.shape)
             # torch.Size([10]) torch.Size([10, 2, 52, 160])
@@ -765,6 +759,9 @@ class RepPointsHead(nn.Module):
             agg_cls_out = self.reppoints_cls_out(agg_feature)
             self.offset.append(temp_offset)
             self.inv_offset.append(temp_inv_offset)
+            # if len(self.offset)==1:
+            #     for k in range(3):
+            #         print(temp_offset[k][0,:,30,30])
             return agg_cls_out, pts_out_init[:1,...], pts_out_refine[:1,...]
         
 

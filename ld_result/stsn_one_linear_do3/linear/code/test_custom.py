@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/stsn_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear/epoch_31.pth'
+checkpoint_file='/home/ld/RepPoints/ld_result/stsn_one_do3/epoch_30.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -74,7 +74,7 @@ compute_time=0
 support_count=2
 support_num=5
 out_name='agg'
-out_path='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear/epoch_31_thres0.1_nms0.5_support_'+str(support_num)
+out_path='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/linear/epoch_30_thres0.3_nms0.5_support_'+str(support_num)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	os.mkdir(os.path.join(out_path,out_name))
@@ -86,12 +86,12 @@ result_record=[]
 eval_data=[]
 
 loc_data=[]
-
+reppooints_data=[[] for i in range(5)]
 offset_data=[[] for i in range(5)]
-offset_data=[offset_data.copy(),offset_data.copy(),offset_data.copy()]
+offset_data=[copy.deepcopy(offset_data),copy.deepcopy(offset_data),copy.deepcopy(offset_data)]
 
 inv_offset_data=[[] for i in range(5)]
-inv_offset_data=[inv_offset_data.copy(),inv_offset_data.copy()]
+inv_offset_data=[copy.deepcopy(inv_offset_data),copy.deepcopy(inv_offset_data)]
 img_record=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
@@ -141,10 +141,13 @@ for i,(frame) in enumerate(data):
 	result = inference_trackor(model, img_list)
 	offset_t=model.bbox_head.offset
 	inv_offset_t=model.bbox_head.inv_offset
+	reppoint_t=model.bbox_head.reppoints
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
 	loc_data.append(loc_result)
+	for m in range(len(reppoint_t)):
+		reppooints_data[m].append(reppoint_t[m])
 	for m in range(len(offset_t)):
 		for n in range(len(offset_t[m])):
 			offset_data[n][m].append(offset_t[m][n])
@@ -175,6 +178,7 @@ mmcv.dump(inv_offset_data, os.path.join(out_path,out_name,'inv_offset.pkl'))
 # exit()
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
+mmcv.dump(reppooints_data, os.path.join(out_path,out_name,'reppoints.pkl'))
 
 
 print('evaluating result of ', out_name)

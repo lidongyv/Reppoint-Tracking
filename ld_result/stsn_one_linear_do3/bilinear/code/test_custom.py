@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -17,7 +17,7 @@ import os
 import os.path as osp
 import shutil
 import tempfile
-
+import copy
 import mmcv
 import torch
 import torch.distributed as dist
@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/stsn_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear/epoch_31.pth'
+checkpoint_file='/home/ld/RepPoints/ld_result/stsn_one_do3/epoch_30.pth'
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
 if cfg.get('cudnn_benchmark', False):
@@ -74,7 +74,7 @@ compute_time=0
 support_count=2
 support_num=5
 out_name='agg'
-out_path='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear/epoch_31_thres0.1_nms0.5_support_'+str(support_num)
+out_path='/home/ld/RepPoints/ld_result/stsn_one_linear_do3/bilinear/epoch_30_thres0.3_nms0.5_support_'+str(support_num)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 	os.mkdir(os.path.join(out_path,out_name))
@@ -88,10 +88,10 @@ eval_data=[]
 loc_data=[]
 reppooints_data=[[] for i in range(5)]
 offset_data=[[] for i in range(5)]
-offset_data=[offset_data.copy(),offset_data.copy(),offset_data.copy()]
+offset_data=[copy.deepcopy(offset_data),copy.deepcopy(offset_data),copy.deepcopy(offset_data)]
 
 inv_offset_data=[[] for i in range(5)]
-inv_offset_data=[inv_offset_data.copy(),inv_offset_data.copy()]
+inv_offset_data=[copy.deepcopy(inv_offset_data),copy.deepcopy(inv_offset_data)]
 img_record=[]
 scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
@@ -151,6 +151,18 @@ for i,(frame) in enumerate(data):
 	for m in range(len(offset_t)):
 		for n in range(len(offset_t[m])):
 			offset_data[n][m].append(offset_t[m][n])
+	# 		if m==0:
+	# 			print(n,m)
+	# 			print(offset_data[n][m][-1][0,:,30,30],offset_t[m][n][0,:,30,30])
+	# 			# print(offset_data[0][0][-1][0,:,30,30])
+	# 			# print(offset_data[1][0][-1][0,:,30,30])
+	# 			# print(offset_data[2][0][-1][0,:,30,30])
+	# print(offset_t[0][0][0,:,30,30])
+	# print(offset_t[0][1][0,:,30,30])
+	# print(offset_t[0][2][0,:,30,30])
+	# print(offset_data[0][0][-1][0,:,30,30])
+	# print(offset_data[1][0][-1][0,:,30,30])
+	# print(offset_data[2][0][-1][0,:,30,30])
 	for m in range(len(inv_offset_t)):
 		for n in range(len(inv_offset_t[m])):
 			inv_offset_data[n][m].append(inv_offset_t[m][n])

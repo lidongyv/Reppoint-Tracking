@@ -65,7 +65,7 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.1,
+    score_thr=0.3,
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
@@ -150,7 +150,8 @@ total_epochs = 10
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = '/home/ld/RepPoints/ld_result/stsn_nine_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+# load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_20.pth'
+load_from='/home/ld/RepPoints/ld_result/stsn_nine_do3/epoch_30.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'

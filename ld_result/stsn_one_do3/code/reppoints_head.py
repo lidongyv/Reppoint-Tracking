@@ -641,7 +641,7 @@ class RepPointsHead(nn.Module):
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
         if test:
-            self.reppoints=dcn_offset.data.cpu().numpy()
+            self.reppoints.append(dcn_offset.data.cpu().numpy())
         cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # cls_out = self.reppoints_cls_out(cls_out_feature)        
 
@@ -685,11 +685,14 @@ class RepPointsHead(nn.Module):
                 weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
                 weight0=torch.cat([weight0,weight],dim=1)
                 feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-            weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
-            agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
+            # weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
+            # agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
+            weight=torch.nn.functional.softmax(weight0,dim=1)
+            agg_feature=torch.sum(feature*weight,dim=1)
             agg_cls_out = self.reppoints_cls_out(agg_feature)
             return agg_cls_out, pts_out_init, pts_out_refine
         else:
+            support_count=cls_out_feature.shape[0]-1
             reference=cls_out_feature[:1,...]+0
             refer_weight_f=self.cls_weight[index](reference)
             weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))

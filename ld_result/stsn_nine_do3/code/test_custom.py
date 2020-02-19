@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -74,7 +74,7 @@ compute_time=0
 support_count=2
 support_num=5
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/stsn_nine_do3/epoch_30_thres0.1_nms0.5_support_'+str(support_num)
+out_path='/home/ld/RepPoints/ld_result/stsn_nine_do3/epoch_30_thres0.3_nms0.5_support_'+str(support_num)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
 if not os.path.exists(os.path.join(out_path,out_name)):
@@ -89,7 +89,7 @@ eval_data=[]
 loc_data=[]
 reppooints_data=[[] for i in range(5)]
 offset_data=[[] for i in range(5)]
-offset_data=[offset_data.copy(),offset_data.copy()]
+offset_data=[copy.deepcopy(offset_data),copy.deepcopy(offset_data)]
 
 
 img_record=[]

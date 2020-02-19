@@ -578,48 +578,15 @@ class RepPointsHead(nn.Module):
         ], 1)
         return grid_yx, regressed_bbox
 
-    def forward_single(self, x,index,test=False):
-        self.agg=[self.agg1,self.agg2,self.agg3,self.agg4,self.agg5]
-        self.cls_weight=[self.cls_weight1,self.cls_weight2,self.cls_weight3,self.cls_weight4,self.cls_weight5]
-        # self.reg_weight=[self.reg_weight1,self.reg_weight2,self.reg_weight3,self.reg_weight4,self.reg_weight5]
+
+    def forward_single(self, x,test):
+	
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
         #   from regular grid placed on a pre-defined bbox.
         # print(dcn_base_offset.view(-1))
         # exit()
-
-        # print(x.shape)
-        # print(index)
-        support_count=2
-        select_id=[]
-        for i in range(support_count):
-            select_id.append([])
-        # select_id[0]=torch.arange(x.shape[0])-2
-        # select_id[0]=torch.where(select_id[0]<0,torch.arange(x.shape[0]),select_id[0])
-        # select_id[1]=torch.arange(x.shape[0])+2
-        # select_id[1]=torch.where(select_id[1]>=x.shape[0],torch.arange(x.shape[0]),select_id[1])
-
-        select_id[0]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[0][select_id[0]==np.arange(x.shape[0])]=select_id[0][select_id[0]==np.arange(x.shape[0])]-1
-        select_id[1]=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        select_id[1][select_id[1]==np.arange(x.shape[0])]=select_id[1][select_id[1]==np.arange(x.shape[0])]-1
-        offsets=[]
-        reference=x+0
-        # for j in range(support_count):
-        #     support=x[select_id[j],:,:,:]
-        #     offset=self.agg[index](support,reference)
-        #     offsets.append(offset)
-        with torch.no_grad():
-            x_linear = torch.linspace(-1, 1, reference.shape[-2])
-            y_linear = torch.linspace(-1, 1, reference.shape[-1])
-            meshx, meshy = torch.meshgrid((x_linear, y_linear))
-            grid_init = torch.stack((meshy, meshx), 2)
-            grid_init = grid_init.unsqueeze(0).repeat(reference.shape[0],1,1,1).cuda(reference.device)
-            # grid[:,:,:,0]=grid[:,:,:,0]+offset[:,1,:,:]/reference.shape[-1]
-            # grid[:,:,:,1]=grid[:,:,:,1]+offset[:,0,:,:]/reference.shape[-2]
-            # out = torch.nn.functional.grid_sample(support, grid)
-
         points_init = 0
         cls_feat = x
         pts_feat = x
@@ -627,11 +594,9 @@ class RepPointsHead(nn.Module):
             cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
             pts_feat = reg_conv(pts_feat)
-
         # initialize reppoints
-        pts_init_feature=self.relu(self.reppoints_pts_init_conv(pts_feat))
-        pts_out_init = self.reppoints_pts_init_out(pts_init_feature)
-
+        pts_out_init = self.reppoints_pts_init_out(
+            self.relu(self.reppoints_pts_init_conv(pts_feat)))
         pts_out_init = pts_out_init + points_init
         # refine and classify reppoints
         #control the grad between two loss,0.1 valid grad
@@ -640,9 +605,8 @@ class RepPointsHead(nn.Module):
         ) + self.gradient_mul * pts_out_init
         #to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
-        if test:
-            self.reppoints=dcn_offset.data.cpu().numpy()
-            
+        self.reppoints.append(dcn_offset.data.cpu().numpy())
+
         #ransac before dcn for classification
         offset=dcn_offset+0
         warp_results=[]
@@ -668,73 +632,27 @@ class RepPointsHead(nn.Module):
         inner_index=((warp_result[:,init_class,:,:,:]-init_score)>-0.1).float()
         mask=inner_index.permute(0,3,1,2).repeat_interleave(1,2,1,1)
         offset=offset*mask
+        self.mask.append(mask.data.cpu().numpy)
+        
 
-        
-            
-        
-        
-        cls_out_feature=self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
-        # cls_out = self.reppoints_cls_out(cls_out_feature)        
-
-        pts_refine_feature=self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset))
-        pts_out_refine = self.reppoints_pts_refine_out(pts_refine_feature)
+        cls_out = self.reppoints_cls_out(
+            self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset)))
+        pts_out_refine = self.reppoints_pts_refine_out(
+            self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         #detach the init grad
         pts_out_refine = pts_out_refine + pts_out_init.detach()
-
-        if not test:
-            reference=cls_out_feature+0
-            refer_weight_f=self.cls_weight[index](reference)
-            weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
-            feature=reference.unsqueeze(1)
-            for j in range(support_count):
-                grid_cls_init=grid_init+0
-                support=cls_out_feature[select_id[j],:,:,:]
-                offset=self.agg[index](support,reference)
-                offsets.append(offset)
-                grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offsets[j][:,1,:,:]/reference.shape[-1]
-                grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offsets[j][:,0,:,:]/reference.shape[-2]
-                tk_feature = torch.nn.functional.grid_sample(support, grid_cls_init)
-                weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
-                weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-            weight=torch.nn.functional.softmax(weight0[:,1:,...],dim=1)
-            agg_feature=torch.sum(feature[:,1:,...]*weight,dim=1)
-            agg_cls_out = self.reppoints_cls_out(agg_feature)
-            return agg_cls_out, pts_out_init, pts_out_refine
-        else:
-            reference=cls_out_feature[:1,...]+0
-            refer_weight_f=self.cls_weight[index](reference)
-            weight0=torch.ones_like(torch.nn.functional.cosine_similarity(reference,reference,dim=1).unsqueeze(1).unsqueeze(1))
-            feature=reference.unsqueeze(1)
-            tmp_offset=[]
-            for j in range(support_count):
-                grid_cls_init=grid_init[:1,...]+0
-                support=cls_out_feature[j+1:j+2,:,:,:]
-                offset=self.agg[index](support,reference)
-                offsets.append(offset)
-                grid_cls_init[:,:,:,0]=grid_cls_init[:,:,:,0]+offsets[j][:,1,:,:]/reference.shape[-1]
-                grid_cls_init[:,:,:,1]=grid_cls_init[:,:,:,1]+offsets[j][:,0,:,:]/reference.shape[-2]
-                tk_feature = torch.nn.functional.grid_sample(support, grid_cls_init)
-                weight=torch.nn.functional.cosine_similarity(refer_weight_f,self.cls_weight[index](tk_feature),dim=1).unsqueeze(1).unsqueeze(1)
-                weight0=torch.cat([weight0,weight],dim=1)
-                feature=torch.cat([feature,tk_feature.unsqueeze(1)],dim=1)
-                tmp_offset.append(offset.data.cpu().numpy())
-            self.offset=tmp_offset
-            weight=torch.nn.functional.softmax(weight0,dim=1)
-            agg_feature=torch.sum(feature*weight,dim=1)
-            agg_cls_out = self.reppoints_cls_out(agg_feature)
-            return agg_cls_out, pts_out_init[:1,...], pts_out_refine[:1,...]
-        
+        # print(cls_out.shape)
+        # if dcn_offset.shape[-1]==156:
+        #     self.init_offset=dcn_offset
+        #     self.refine_offset=pts_out_refine- dcn_base_offset
+        # np.save('/home/ld/RepPoints/offset/init'+str(dcn_offset.shape[-1])+'.npy',dcn_offset.data.cpu().numpy())
+        return cls_out, pts_out_init, pts_out_refine
 
     def forward(self, feats,test=False):
         #5 feature map
         self.reppoints=[]
-        self.offsets=[]
-        outs=multi_apply(self.forward_single, feats,[0,1,2,3,4],[test for i in range(5)])
-        # outs=[]
-        # for i in range(len(feats)):
-        #     outs.append(self.forward_single(feats[i],i))
-        # outs=tuple(outs)
+        self.mask=[]
+        outs=multi_apply(self.forward_single, feats,[test for i in range(5)])
         return outs
 
     def get_points(self, featmap_sizes, img_metas):
