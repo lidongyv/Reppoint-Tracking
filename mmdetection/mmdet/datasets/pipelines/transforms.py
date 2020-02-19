@@ -109,9 +109,15 @@ class Resize(object):
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
+
         if self.keep_ratio:
+            #1280,720
+            
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
+            # print(img.shape,results['img'].shape)
+            #1280,386
+
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 results['img'], results['scale'], return_scale=True)
@@ -125,8 +131,8 @@ class Resize(object):
 
     def _resize_bboxes(self, results):
         img_shape = results['img_shape']
+
         for key in results.get('bbox_fields', []):
-            # print(key,results[key])
             bboxes = results[key] * results['scale_factor']
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
@@ -238,15 +244,19 @@ class Pad(object):
         self.size_divisor = size_divisor
         self.pad_val = pad_val
         # only one of size and size_divisor should be valid
-        assert size is not None or size_divisor is not None
-        assert size is None or size_divisor is None
+        # assert size is not None or size_divisor is not None
+        # assert size is None or size_divisor is None
 
     def _pad_img(self, results):
+        
         if self.size is not None:
             padded_img = mmcv.impad(results['img'], self.size)
-        elif self.size_divisor is not None:
+            results['img'] = padded_img
+        if self.size_divisor is not None:
             padded_img = mmcv.impad_to_multiple(
                 results['img'], self.size_divisor, pad_val=self.pad_val)
+        # print(results['img'].shape,padded_img.shape)
+        # (386, 1280, 3) (416, 1280, 3)
         results['img'] = padded_img
         results['pad_shape'] = padded_img.shape
         results['pad_fixed_size'] = self.size

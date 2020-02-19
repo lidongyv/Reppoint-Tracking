@@ -196,6 +196,7 @@ def tpfp_default(det_bboxes, gt_bboxes, gt_ignore, iou_thr, area_ranges=None):
                 area = (bbox[2] - bbox[0] + 1) * (bbox[3] - bbox[1] + 1)
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
+
     return tp, fp
 
 
@@ -258,6 +259,7 @@ def eval_map(det_results,
     gt_labels = [
         label if label.ndim == 1 else label[:, 0] for label in gt_labels
     ]
+
     for i in range(num_classes):
         # get gt and det bboxes of this class
         cls_dets, cls_gts, cls_gt_ignore = get_cls_results(
@@ -265,6 +267,7 @@ def eval_map(det_results,
         # calculate tp and fp for each image
         tpfp_func = (
             tpfp_imagenet if dataset in ['det', 'vid'] else tpfp_default)
+
         tpfp = [
             tpfp_func(cls_dets[j], cls_gts[j], cls_gt_ignore[j], iou_thr,
                       area_ranges) for j in range(len(cls_dets))
@@ -284,6 +287,7 @@ def eval_map(det_results,
                         np.logical_not(cls_gt_ignore[j])
                         & (gt_areas >= min_area) & (gt_areas < max_area))
         # sort all det bboxes by score, also sort tp and fp
+
         cls_dets = np.vstack(cls_dets)
         num_dets = cls_dets.shape[0]
         sort_inds = np.argsort(-cls_dets[:, -1])
@@ -295,6 +299,7 @@ def eval_map(det_results,
         eps = np.finfo(np.float32).eps
         recalls = tp / np.maximum(num_gts[:, np.newaxis], eps)
         precisions = tp / np.maximum((tp + fp), eps)
+
         # calculate AP
         if scale_ranges is None:
             recalls = recalls[0, :]
@@ -302,6 +307,7 @@ def eval_map(det_results,
             num_gts = num_gts.item()
         mode = 'area' if dataset != 'voc07' else '11points'
         ap = average_precision(recalls, precisions, mode)
+
         eval_results.append({
             'num_gts': num_gts,
             'num_dets': num_dets,
@@ -309,6 +315,7 @@ def eval_map(det_results,
             'precision': precisions,
             'ap': ap
         })
+
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
         all_ap = np.vstack([cls_result['ap'] for cls_result in eval_results])
@@ -355,8 +362,7 @@ def print_map_summary(mean_ap, results, dataset=None, ranges=None):
     for i, cls_result in enumerate(results):
         if cls_result['recall'].size > 0:
             recalls[:, i] = np.array(cls_result['recall'], ndmin=2)[:, -1]
-            precisions[:, i] = np.array(
-                cls_result['precision'], ndmin=2)[:, -1]
+            precisions[:, i] = np.array(cls_result['precision'], ndmin=2)[:, -1]
         aps[:, i] = cls_result['ap']
         num_gts[:, i] = cls_result['num_gts']
 
@@ -370,6 +376,7 @@ def print_map_summary(mean_ap, results, dataset=None, ranges=None):
     if not isinstance(mean_ap, list):
         mean_ap = [mean_ap]
     header = ['class', 'gts', 'dets', 'recall', 'precision', 'ap']
+
     for i in range(num_scales):
         if ranges is not None:
             print("Area range ", ranges[i])

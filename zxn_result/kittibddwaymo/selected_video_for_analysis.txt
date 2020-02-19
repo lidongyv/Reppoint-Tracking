@@ -1,0 +1,13 @@
+/backdata01/KITTI/kitti/tracking/training/image_02/0019
+/backdata01/KITTI/kitti/tracking/training/image_02/0016
+/backdata01/bdd/training/0010/
+/backdata01/bdd/training/0030/
+/backdata01/bdd/training/0041/
+/backdata01/waymo/val/image/segment-1024360143612057520_3580_000_3600_000
+/backdata01/waymo/val/image/segment-12866817684252793621_480_000_500_000
+/backdata01/waymo/val/image/segment-15224741240438106736_960_000_980_000
+/backdata01/waymo/val/image/segment-1943605865180232897_680_000_700_000
+/backdata01/waymo/val/image/segment-4690718861228194910_1980_000_2000_000
+/backdata01/waymo/val/image/segment-5574146396199253121_6759_360_6779_360
+/backdata01/waymo/val/image/segment-7799643635310185714_680_000_700_000
+/backdata01/waymo/val/image/segment-9231652062943496183_1740_000_1760_000

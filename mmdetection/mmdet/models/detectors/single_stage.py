@@ -4,7 +4,6 @@ from mmdet.core import bbox2result,loc2result
 from .. import builder
 from ..registry import DETECTORS
 from .base import BaseDetector
-from mmdet.core import aggmulti_apply
 from collections import OrderedDict
 import torch
 import numpy as np
@@ -33,9 +32,8 @@ class SingleStageDetector(BaseDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
-        self.agg_check=agg
-        self.class_check=agg['dcn']['class_check']
-        self.index=agg['dcn']['index']
+
+        self.index=True
 
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
@@ -82,21 +80,18 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None):
-
-        x = self.extract_feat(img)
+        with torch.no_grad():
+            x = self.extract_feat(img)
+        # print(img.shape)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         losses = self.bbox_head.loss(
             *loss_inputs, gt_bboxes_ignore=None)
 
         return losses
-        # outs = self.bbox_head(x)
-        # loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-        # losses = self.bbox_head.loss(
-        #     *loss_inputs, gt_bboxes_ignore=None)
-        # return losses
-    def simple_test(self, img, img_meta, rescale=False):
 
+    def simple_test(self, img, img_meta, rescale=False):
+        print('94 debug')
         print('single test')
 
         x = self.extract_feat(img)
