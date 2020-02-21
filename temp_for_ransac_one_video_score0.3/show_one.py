@@ -199,7 +199,6 @@ if __name__=='__main__':
     flow_dir_names.sort()
     for each_flow_name in flow_dir_names:
         current_index = all_imgname_list.index(each_flow_name)
-
         img1=cv2.imread(data[current_index + 1]['filename'])
         img2=cv2.imread(data[current_index + 1]['filename'])
         show_img=img1+0
@@ -214,7 +213,8 @@ if __name__=='__main__':
         ransac=torch.from_numpy(mmcv.load(os.path.join(root_path, 'flow', '%s/'%each_flow_name,'ransac2.pkl')))
         correspondense=torch.from_numpy(mmcv.load(os.path.join(root_path, 'flow', '%s/'%each_flow_name,'correspondense2.pkl')))
 
-
+        # print(offset1_ori.shape)
+        # exit()
         scale=[8]
         det1=det_record[current_index]
         det2=det_record[current_index + 1]
@@ -227,8 +227,8 @@ if __name__=='__main__':
         for m in range(len(loc1)):
             v_im=show_img+0
 
-            x=(loc1[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc1[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc1[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc1[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
@@ -236,64 +236,64 @@ if __name__=='__main__':
             index_x=(loc1[m,1]//8).long().clamp(min=0,max=96)
             index_y=(loc1[m,0]//8).long().clamp(min=0,max=160)
             for n in range(9):
-                bias=offset1_ori[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=offset1_ori[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc1[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc1[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc1[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc1[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \
                     np.tile(np.reshape([0, 0, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
-            x=(loc1[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc1[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc1[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc1[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
             v_im_refer=v_im+0
             v_im=v_im_center+0
             for n in range(18):
-                bias=offset1_sample[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=offset1_sample[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc1[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc1[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc1[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc1[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \
                     np.tile(np.reshape([255, 0, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
-            x=(loc1[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc1[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc1[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc1[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
             v_im_sample=v_im+0
             v_im=v_im_center+0
             for n in range(18):
-                bias=ransac[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=ransac[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc1[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc1[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc1[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc1[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \
                     np.tile(np.reshape([0, 255, 0], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
-            x=(loc1[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc1[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc1[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc1[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
             v_im_ransac=v_im+0
             v_im=v_im_center+0
             for n in range(18):
-                bias=correspondense[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=correspondense[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc1[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc1[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc1[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc1[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \
                     np.tile(np.reshape([0, 255, 0], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
-            x=(loc1[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc1[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc1[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc1[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
@@ -314,8 +314,8 @@ if __name__=='__main__':
         for m in range(len(loc2)):
             v_im=show_img2+0
 
-            x=(loc2[m,1]*1.78).long().clamp(min=ps+1,max=1280-ps-1)
-            y=(loc2[m,0]*1.78).long().clamp(min=ps+1,max=1920-ps-1)
+            x=(loc2[m,1]*1.67).long().clamp(min=ps+1,max=1280-ps-1)
+            y=(loc2[m,0]*1.67).long().clamp(min=ps+1,max=1920-ps-1)
 
             v_im[x-ps:x+ps+1, y-ps:y+ps+1, :] = \
                 np.tile(np.reshape([0, 255, 255], (1, 1, 3)), (2*ps+1, 2*ps+1, 1))
@@ -323,10 +323,10 @@ if __name__=='__main__':
             index_x=(loc2[m,1]//8).long().clamp(min=0,max=96)
             index_y=(loc2[m,0]//8).long().clamp(min=0,max=160)
             for n in range(9):
-                bias=offset2_ori[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=offset2_ori[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc2[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc2[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc2[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc2[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \
@@ -334,10 +334,10 @@ if __name__=='__main__':
             v_im_refer2=v_im+0
             v_im=v_im_center+0
             for n in range(18):
-                bias=offset2_sample[0,2*n:2*n+2,index_x,index_y]*8*1.78
+                bias=offset2_sample[0,2*n:2*n+2,index_x,index_y]*8*1.67
                 bias=np.floor(bias).long()
-                x=(loc2[m,1]*1.78+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
-                y=(loc2[m,0]*1.78+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
+                x=(loc2[m,1]*1.67+bias[1]).clamp(min=ps+1,max=1280-ps-1).int()
+                y=(loc2[m,0]*1.67+bias[0]).clamp(min=ps+1,max=1920-ps-1).int()
 
                 v_im[x-1:x+10, y,:]
                 v_im[x-ps:x+ps+1, y-ps:y+ps+1,:] = \

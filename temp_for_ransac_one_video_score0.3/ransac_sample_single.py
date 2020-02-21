@@ -77,7 +77,7 @@ def run_ransac(offset, sample_mask,is_inlier, sample_size, goal_inliers, max_ite
         # print(offset.shape[-1])
         for m in range(offset.shape[-1]):
             # print(inner_mask[:,:,:,m].shape,is_inlier(mean_offset,offset[:,:,:,:,m]).shape)
-            inner_mask[:,:,:,m]=torch.where(is_inlier(mean_offset,offset[:,:,:,:,m],threshold=0.3),torch.ones(1).to(offset.device),inner_mask[:,:,:,m])
+            inner_mask[:,:,:,m]=torch.where(is_inlier(mean_offset,offset[:,:,:,:,m],threshold=0.2),torch.ones(1).to(offset.device),inner_mask[:,:,:,m])
         print('inner mask',inner_mask[0,x_loc1,y_loc1])
         inner_mask=sample_mask*inner_mask
         print('variance check',torch.sum((sample_mask!=inner_mask).float().max(-1)[0]))
