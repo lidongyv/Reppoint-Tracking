@@ -84,35 +84,53 @@ if __name__=='__main__':
     x=torch.ones(1).cuda(0)
     one=torch.ones(1).to(x.device)
     zero=torch.zeros(1).to(x.device)
-    reppoints=mmcv.load('repoints_sample.pkl').to(x.device)
-    n,c,h,w=generate_grid(reppoints[:2,:1,:,:])
+    reppoints=mmcv.load('/home/ld/RepPoints/temp_for_ransac_score0.3/pts_out_init_grad_mul_5_all.pkl')
+    offset1=reppoints[0][1].to(x.device)
+    offset2=reppoints[0][2].to(x.device)
+    offset1_ori_out=offset1+0
+    offset2_ori_out=offset2+0
+    feature=mmcv.load('/home/ld/RepPoints/temp_for_ransac_score0.3/cls_feat_5_all.pkl')
+    #82 frame
+    feature1=torch.from_numpy(feature[0][2]).to(x.device)
+    #83 frame
+    feature2=torch.from_numpy(feature[0][3]).to(x.device)
+    n,c,h,w=generate_grid(offset1[:,:1,:,:])
     w=((w/w.shape[-1])-0.5)*2
     h=((h/h.shape[-2])-0.5)*2
     grid=torch.cat([w,h],dim=1).permute(0,2,3,1).to(x.device)
-    inv_flow=torch.rand_like(reppoints[1:,:2,:,:])
-    inv_flow=inv_flow.permute(0,2,3,1)
+    # print(grid.shape,offset1.shape)
+    # inv_flow=torch.rand_like(reppoints[1:,:2,:,:])
+    inv_flow=torch.from_numpy(np.load('/home/ld/RepPoints/temp_for_ransac_score0.3/1233_later_pair_0.npy'))
+    scale=inv_flow.shape[-1]/offset1.shape[-1]
+    inv_flow=torch.nn.functional.interpolate(inv_flow,size=(offset1.shape[-2],offset1.shape[-1]))/scale
+    inv_flow=inv_flow.permute(0,2,3,1).to(x.device)
+    # print(inv_flow.shape)
     #N-1,xy
-    offset1=reppoints[:2]
+    # offset1=reppoints[:2]
     #xy to wh
     for i in range(9):
         offset1[:,2*i,:,:]=offset1[:,2*i,:,:]+offset1[:,2*i+1,:,:]
         offset1[:,2*i+1,:,:]=offset1[:,2*i,:,:]-offset1[:,2*i+1,:,:]
         offset1[:,2*i+1,:,:]=offset1[:,2*i,:,:]-offset1[:,2*i+1,:,:]
     sample1=torch.randn(offset1.shape[0],sample_num*offset1.shape[1],offset1.shape[2],offset1.shape[3]).to(x.device)
-    feature1=torch.randn(2,256,offset1.shape[-2],offset1.shape[-1]).to(x.device)
+    # feature1=torch.randn(2,256,offset1.shape[-2],offset1.shape[-1]).to(x.device)
     #N
-    offset2=reppoints[1:]
+    # offset2=reppoints[1:]
     for i in range(9):
         offset2[:,2*i,:,:]=offset2[:,2*i,:,:]+offset2[:,2*i+1,:,:]
         offset2[:,2*i+1,:,:]=offset2[:,2*i,:,:]-offset2[:,2*i+1,:,:]
         offset2[:,2*i+1,:,:]=offset2[:,2*i,:,:]-offset2[:,2*i+1,:,:]
     sample2=torch.randn(offset2.shape[0],sample_num*offset2.shape[1],offset2.shape[2],offset2.shape[3]).to(x.device)
-    feature2=torch.randn(2,256,offset2.shape[-2],offset2.shape[-1]).to(x.device)
+    # feature2=torch.randn(2,256,offset2.shape[-2],offset2.shape[-1]).to(x.device)
     for i in range(sample_num):
         sample1[:,18*i:18*(i+1),:,:]=sample1[:,18*i:18*(i+1),:,:]+offset1
         sample2[:,18*i:18*(i+1),:,:]=sample2[:,18*i:18*(i+1),:,:]+offset2
     offset1=torch.cat([offset1,sample1],dim=1)
     offset2=torch.cat([offset2,sample2],dim=1)
+    offset1_sample_out=offset1+0
+    offset2_sample_out=offset2+0
+    # print(grid.shape)
+    # print(offset1.permute(0,2,3,1).shape,grid.repeat(1,1,1,9*(sample_num+1)).shape)
     sample1_feature_grid=offset1.permute(0,2,3,1)+grid.repeat(1,1,1,9*(sample_num+1))
     sample2_feature_grid=offset2.permute(0,2,3,1)+grid.repeat(1,1,1,9*(sample_num+1))
 
@@ -150,11 +168,14 @@ if __name__=='__main__':
     print(offsets.shape)
 
     n = 9
-    max_iterations = 1000
+    max_iterations = 100
     goal_inliers = 3
     # RANSAC to check the cosistentcy
     valid_num, mean_flow,valid_points = run_ransac(offsets,sample_mask, is_inlier, sample_num+1, goal_inliers, max_iterations)
     valid_points=torch.repeat_interleave(valid_points.unsqueeze(-2),2,dim=-2)
     valid_reppoints=offsets*valid_points
-    mmcv.dump('reppoints.pkl',reppoints)
-    mmcv.dump('samples.pks',sample1)
+    mmcv.dump(offset1_ori_out.data.cpu().numpy(),'./offset1_ori.pkl')
+    mmcv.dump(offset2_ori_out.data.cpu().numpy(),'./offset2_ori.pkl')
+    mmcv.dump(offset1_sample_out.data.cpu().numpy(),'./offset1_sample.pkl')
+    mmcv.dump(offset2_sample_out.data.cpu().numpy(),'./offset2_sample.pkl')
+    mmcv.dump(valid_reppoints.data.cpu().numpy(),'./ransac2.pkl')

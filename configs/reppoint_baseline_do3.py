@@ -44,7 +44,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox_init=dict(type='SmoothL1Loss', beta=0.11, loss_weight=0.5),
         loss_bbox_refine=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
-        transform_method='moment'))
+        transform_method='minmax'))
 # training and testing settings
 train_cfg = dict(
     init=dict(
@@ -76,10 +76,10 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-	dict(type='Resize', img_scale=(1280, 720), keep_ratio=True),
+	dict(type='Resize', img_scale=(768, 512), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(720, 1280),size_divisor=32),
+    dict(type='Pad', size=(512, 768),size_divisor=256),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
@@ -87,13 +87,13 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1280, 720),
+        img_scale=(768, 512),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size=(720, 1280),size_divisor=32),
+            dict(type='Pad', size=(512, 768),size_divisor=256),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
@@ -112,17 +112,17 @@ data = dict(
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
-        ann_file='/backdata01/kitti_bdd_waymo_2class.json',
+        ann_file='/backdata01/waymo_train_269.json',
         img_prefix=data_root,
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/backdata01/kitti_bdd_waymo_2class_val_13.json',
+        ann_file='/backdata01/waymo_val_8.json',
         img_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file='/backdata01/kitti_bdd_waymo_2class_val_13.json',
+        ann_file='/backdata01/waymo_val_8.json',
         img_prefix=data_root ,
         pipeline=test_pipeline))
 # optimizer
@@ -145,11 +145,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 10
+total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/reppoint_do3'
+work_dir = '/home/ld/RepPoints/ld_result/reppoint_waymo_do3'
 load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'

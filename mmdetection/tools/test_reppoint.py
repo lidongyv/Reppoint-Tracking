@@ -2,7 +2,7 @@
 #@Author: Lidong Yu   
 #@Date: 2019-11-25 19:24:06  
 #@Last Modified by: Lidong Yu  
-#@Last Modified time: 2019-11-25 19:24:06
+import copy
 
 from mmdet.apis import init_detector, inference_detector, show_result,inference_trackor
 import mmcv
@@ -74,7 +74,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33_thres0.3_nms0.3'
+out_path='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33_thres0.3_nms0.5'
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)

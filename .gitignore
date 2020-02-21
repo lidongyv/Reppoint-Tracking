@@ -57,6 +57,7 @@ coverage.xml
 *.zip
 *.pyc
 *.so
+*.npy
 # Sphinx documentation
 docs/_build/
 
@@ -84,3 +85,4 @@ code_back/
 *.png
 *.jpg
 *.log
+temp_for_ransac_one_video_score0.3/flow/000000/flow_000000to_000001.npy
