@@ -14,7 +14,7 @@ from ..utils import ConvModule, bias_init_with_prob
 
 
 @HEADS.register_module
-class RepPointsHead_WithMask(nn.Module):
+class RepPointsHead(nn.Module):
     """RepPoint head.
 
     Args:
@@ -61,7 +61,7 @@ class RepPointsHead_WithMask(nn.Module):
                  center_init=True,
                  transform_method='moment',
                  moment_mul=0.01):
-        super(RepPointsHead_WithMask, self).__init__()
+        super(RepPointsHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -299,7 +299,6 @@ class RepPointsHead_WithMask(nn.Module):
         cls_mask = torch.sigmoid(self.reppoints_cls_mask(cls_feature1))
         # dcnv2
         cls_feature = self.relu(self.reppoints_cls_conv2(cls_feat, dcn_offset, cls_mask))
-
         cls_out = self.reppoints_cls_out(cls_feature)
 
         reg_feature1 = self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset))
