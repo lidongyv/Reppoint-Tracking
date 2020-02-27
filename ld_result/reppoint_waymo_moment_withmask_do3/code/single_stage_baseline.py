@@ -8,7 +8,7 @@ from collections import OrderedDict
 import torch
 import numpy as np
 @DETECTORS.register_module
-class SingleStageDetector(BaseDetector):
+class SingleStageDetector_Baseline(BaseDetector):
     """Base class for single-stage detectors.
 
     Single-stage detectors directly and densely predict bounding boxes on the
@@ -24,7 +24,7 @@ class SingleStageDetector(BaseDetector):
                  test_cfg=None,
                  pretrained=None,
                  index=False):
-        super(SingleStageDetector, self).__init__()
+        super(SingleStageDetector_Baseline, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         if neck is not None:
             self.neck = builder.build_neck(neck)
@@ -36,7 +36,7 @@ class SingleStageDetector(BaseDetector):
         self.index=True
 
     def init_weights(self, pretrained=None):
-        super(SingleStageDetector, self).init_weights(pretrained)
+        super(SingleStageDetector_Baseline, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
             if isinstance(self.neck, nn.Sequential):
@@ -83,7 +83,7 @@ class SingleStageDetector(BaseDetector):
 
         x = self.extract_feat(img)
         
-        # print(img.shape)
+        print(img.shape)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         losses = self.bbox_head.loss(
@@ -100,6 +100,10 @@ class SingleStageDetector(BaseDetector):
         index=True
         bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
+        # print(bbox_list[0][2])
+        # print(bbox_list[0][:2])
+        # # print(bbox_results)
+        # exit()
         box_loc=bbox_list[0][2]
         bbox_list=[bbox_list[0][:2]]
 

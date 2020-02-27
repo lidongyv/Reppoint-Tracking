@@ -294,6 +294,7 @@ class RepPointsHead_WithMask(nn.Module):
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
         self.reppoints.append(dcn_offset.data.cpu().numpy())
         # deformable conv v2 add mask
+
         cls_feature1 = self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # mask computataion
         cls_mask = torch.sigmoid(self.reppoints_cls_mask(cls_feature1))

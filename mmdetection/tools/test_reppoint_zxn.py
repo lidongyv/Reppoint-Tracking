@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/reppoint_waymo_monent_prediction_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/prediction/epoch_45.pth'
+config_file ='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withmask_do3/code/reppoint_waymo_moment_withmask_baseline_do3.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withmask_do3/epoch_43.pth'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -74,7 +74,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/prediction/epoch_45_thres0.3_nms0.5'
+out_path='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withmask_do3/epoch_43_thres0.3_nms0.5'
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
@@ -92,8 +92,6 @@ scale=[8,16,32,64,128]
 scale={'8':0,'16':1,'32':2,'64':3,'128':4}
 
 reppoint_data=[[] for i in range(5)]
-mask_cls_data=[[] for i in range(5)]
-mask_reg_data=[[] for i in range(5)]
 # load and test
 
 # result_record=mmcv.load(os.path.join(out_path,'refer/det_result.pkl'))
@@ -126,21 +124,22 @@ for i,(frame) in enumerate(data):
 	img_list=img
 	result = inference_trackor(model, img_list)
 	reppoint_t=model.bbox_head.reppoints
-	mask_cls_t=model.bbox_head.mask_cls
-	mask_reg_t=model.bbox_head.mask_reg
 	bbox_result=result[0]
 	loc_result=result[1]
 	result_record.append(bbox_result)
 	loc_data.append(loc_result)
 	for m in range(len(reppoint_t)):
 		reppoint_data[m].append(reppoint_t[m])
-		mask_cls_data[m].append(mask_cls_t[m])
-		mask_reg_data[m].append(mask_reg_t[m])
+print('133 debug')
+from IPython import embed
+embed()
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
 mmcv.dump(reppoint_data,os.path.join(out_path,out_name,'reppoints.pkl'))
-mmcv.dump(reppoint_data,os.path.join(out_path,out_name,'mask_cls.pkl'))
-mmcv.dump(reppoint_data,os.path.join(out_path,out_name,'mask_reg.pkl'))
+
 print('evaluating result of ', out_name)
 kitti_eval(result_record, dataset)
+print('140 debug')
+from IPython import embed
+embed()
 

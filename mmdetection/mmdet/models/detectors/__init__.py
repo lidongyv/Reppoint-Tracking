@@ -9,14 +9,16 @@ from .htc import HybridTaskCascade
 from .mask_rcnn import MaskRCNN
 from .mask_scoring_rcnn import MaskScoringRCNN
 from .reppoints_detector import RepPointsDetector
+from .reppoints_detector_baseline import RepPointsDetector_Baseline
 from .retinanet import RetinaNet
 from .rpn import RPN
 from .single_stage import SingleStageDetector
+from .single_stage_baseline import SingleStageDetector_Baseline
 from .two_stage import TwoStageDetector
 
 __all__ = [
-    'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
+    'BaseDetector', 'SingleStageDetector', 'SingleStageDetector_Baseline', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'DoubleHeadRCNN', 'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN',
-    'RepPointsDetector'
+    'RepPointsDetector', 'RepPointsDetector_Baseline'
 ]

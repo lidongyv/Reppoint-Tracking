@@ -155,7 +155,7 @@ def main():
 	# start_epoch=0
 	meta=None
 	epoch=start_epoch
-	vis = visdom.Visdom(env='stsnminmax')
+	vis = visdom.Visdom(env='reppoint')
 	loss_cls_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -175,12 +175,6 @@ def main():
 									ylabel='Loss of refine reppoint',
 									title='Loss of refine reppoint',
 									legend=['Loss of refine reppoint']))
-	loss_pred_window = vis.line(X=torch.zeros((1,)).cpu(),
-						Y=torch.zeros((1)).cpu(),
-						opts=dict(xlabel='minibatches',
-									ylabel='Loss of pred reppoint',
-									title='Loss of pred reppoint',
-									legend=['Loss of pred reppoint']))
 	loss_total_window = vis.line(X=torch.zeros((1,)).cpu(),
 						Y=torch.zeros((1)).cpu(),
 						opts=dict(xlabel='minibatches',
@@ -226,7 +220,7 @@ def main():
 			print('refer computation time:',time.time()-start_time)
 			print('epoch:',epoch,'index:',i,'video_id:',video_id,'reference_id:',reference_id, \
 					'loss_cls:',log_vars['loss_cls'],'loss_init_box:',log_vars['loss_pts_init'], \
-						'loss_refine_box:',log_vars['loss_pts_refine'],'loss_pred_box:',log_vars['loss_pts_pred'])
+						'loss_refine_box:',log_vars['loss_pts_refine'])
 			vis.line(
 			X=torch.ones(1).cpu() *training_sample,
 			Y=(log_vars['loss_cls']) * torch.ones(1).cpu(),
@@ -241,11 +235,6 @@ def main():
 				X=torch.ones(1).cpu() * training_sample,
 				Y=(log_vars['loss_pts_refine']) * torch.ones(1).cpu(),
 				win=loss_refine_window,
-				update='append')
-			vis.line(
-				X=torch.ones(1).cpu() * training_sample,
-				Y=(log_vars['loss_pts_pred']) * torch.ones(1).cpu(),
-				win=loss_pred_window,
 				update='append')
 			vis.line(
 				X=torch.ones(1).cpu() * training_sample,

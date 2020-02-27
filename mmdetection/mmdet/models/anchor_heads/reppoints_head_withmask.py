@@ -297,6 +297,9 @@ class RepPointsHead(nn.Module):
         cls_feature1 = self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # mask computataion
         cls_mask = torch.sigmoid(self.reppoints_cls_mask(cls_feature1))
+        print('300 debug')
+        from IPython import embed
+        embed()
         # dcnv2
         cls_feature = self.relu(self.reppoints_cls_conv2(cls_feat, dcn_offset, cls_mask))
         cls_out = self.reppoints_cls_out(cls_feature)

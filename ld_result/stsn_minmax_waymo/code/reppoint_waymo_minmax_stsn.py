@@ -149,7 +149,7 @@ total_epochs = 20
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/prediction_minmax_waymo'
+work_dir = '/home/ld/RepPoints/ld_result/stsn_minmax_waymo'
 load_from='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_withmask_do3/epoch_53.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'

@@ -2,7 +2,7 @@
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
-    type='RepPointsDetector',
+    type='RepPointsDetector_Baseline',
     pretrained='modelzoo://resnet101',
     backbone=dict(
         type='ResNet',
@@ -150,7 +150,8 @@ total_epochs = 30
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = '/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withmask_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
+load_from= '/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withmask_do3/epoch_31.pth'
+# load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'

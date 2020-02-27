@@ -2,7 +2,7 @@
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
-    type='RepPointsDetector',
+    type='RepPointsDetector_Baseline',
     pretrained='modelzoo://resnet101',
     backbone=dict(
         type='ResNet',
@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='RepPointsHead',
+        type='RepPointsHead_Baseline',
         num_classes=3,
         in_channels=256,
         feat_channels=256,
@@ -44,7 +44,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox_init=dict(type='SmoothL1Loss', beta=0.11, loss_weight=0.5),
         loss_bbox_refine=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
-        transform_method='minmax'))
+        transform_method='moment'))
 # training and testing settings
 train_cfg = dict(
     init=dict(
@@ -145,12 +145,12 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 20
+total_epochs = 30
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/prediction_minmax_waymo'
-load_from='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_withmask_do3/epoch_53.pth'
+work_dir = '/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withoutmask_do3'
+load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'
