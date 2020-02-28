@@ -2,7 +2,7 @@
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
-    type='RepPointsDetector_Baseline',
+    type='RepPointsDetector',
     pretrained='modelzoo://resnet101',
     backbone=dict(
         type='ResNet',
@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='RepPointsHead_Baseline',
+        type='RepPointsHead',
         num_classes=3,
         in_channels=256,
         feat_channels=256,
@@ -145,12 +145,12 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 30
+total_epochs = 20
 # device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/reppoint_waymo_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
+work_dir = '/home/ld/RepPoints/ld_result/prediction_minmax_waymo'
+load_from='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_withmask_do3/epoch_53.pth'
 # load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
 # load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
 # load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'

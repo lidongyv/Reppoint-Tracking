@@ -11,7 +11,7 @@ from mmdet.ops import DeformConv, ModulatedDeformConv
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob
-import random
+
 
 @HEADS.register_module
 class RepPointsHead(nn.Module):
@@ -82,7 +82,7 @@ class RepPointsHead(nn.Module):
         self.use_grid_points = use_grid_points
         self.center_init = center_init
         self.transform_method = transform_method
-        if self.transform_method == 'moment':
+        if self.transform_method == 'moment' or self.transform_method == 'moment_mask':
             self.moment_transfer = nn.Parameter(
                 data=torch.zeros(2), requires_grad=True)
             self.moment_mul = moment_mul
@@ -143,15 +143,13 @@ class RepPointsHead(nn.Module):
         self.reppoints_cls_conv2 = ModulatedDeformConv(self.feat_channels,
                                                        self.point_feat_channels,
                                                        self.dcn_kernel, 1, self.dcn_pad)
-        self.reppoints_cls_fuse = nn.Conv2d(self.point_feat_channels,
-                                           self.point_feat_channels, 1, 1, 0)
         self.reppoints_cls_out = nn.Conv2d(self.point_feat_channels,
                                            self.cls_out_channels, 1, 1, 0)
-        self.reppoints_pts_init_conv = nn.Conv2d(2*self.feat_channels,
+        self.reppoints_pts_init_conv = nn.Conv2d(self.feat_channels,
                                                  self.point_feat_channels, 3,
                                                  1, 1)
         self.reppoints_pts_init_out = nn.Conv2d(self.point_feat_channels,
-                                                pts_out_dim*2, 1, 1, 0)
+                                                pts_out_dim+9, 1, 1, 0)
         self.reppoints_pts_refine_conv = DeformConv(self.feat_channels,
                                                     self.point_feat_channels,
                                                     self.dcn_kernel, 1,
@@ -162,10 +160,8 @@ class RepPointsHead(nn.Module):
         self.reppoints_pts_refine_conv2 = ModulatedDeformConv(self.feat_channels,
                                                               self.point_feat_channels,
                                                               self.dcn_kernel, 1, self.dcn_pad)
-        self.reppoints_pts_refine_fuse = nn.Conv2d(self.point_feat_channels,
-                                           self.point_feat_channels, 1, 1, 0)
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
-                                                  pts_out_dim, 1, 1, 0)
+                                                  pts_out_dim+9, 1, 1, 0)
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -184,7 +180,7 @@ class RepPointsHead(nn.Module):
         normal_init(self.reppoints_cls_conv2, std=0.01)
         normal_init(self.reppoints_cls_mask, std=0.01)
 
-    def points2bbox(self, pts, y_first=True):
+    def points2bbox(self, pts, mask,y_first=True):
         """
         Converting the points set into bounding box.
         :param pts: the input points sets (fields), each points
@@ -194,6 +190,7 @@ class RepPointsHead(nn.Module):
             represented as [x1, y1, x2, y2 ... xn, yn].
         :return: each points set is converting to a bbox [x1, y1, x2, y2].
         """
+        # print(pts.shape)
         pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
         pts_y = pts_reshape[:, :, 0, ...] if y_first else pts_reshape[:, :, 1,
                                                           ...]
@@ -220,6 +217,23 @@ class RepPointsHead(nn.Module):
             pts_x_mean = pts_x.mean(dim=1, keepdim=True)
             pts_y_std = torch.std(pts_y - pts_y_mean, dim=1, keepdim=True)
             pts_x_std = torch.std(pts_x - pts_x_mean, dim=1, keepdim=True)
+            moment_transfer = (self.moment_transfer * self.moment_mul) + (
+                    self.moment_transfer.detach() * (1 - self.moment_mul))
+            moment_width_transfer = moment_transfer[0]
+            moment_height_transfer = moment_transfer[1]
+            # tensor([-0.0048,  0.0101]
+            half_width = pts_x_std * torch.exp(moment_width_transfer)
+            half_height = pts_y_std * torch.exp(moment_height_transfer)
+            bbox = torch.cat([
+                pts_x_mean - half_width, pts_y_mean - half_height,
+                pts_x_mean + half_width, pts_y_mean + half_height
+            ],
+                dim=1)
+        elif self.transform_method == 'moment_mask':
+            pts_y_mean = (pts_y*mask).sum(dim=1, keepdim=True)/mask.sum(dim=1, keepdim=True)
+            pts_x_mean = (pts_x*mask).sum(dim=1, keepdim=True)/mask.sum(dim=1, keepdim=True)
+            pts_y_std = torch.std(pts_y*mask - pts_y_mean, dim=1, keepdim=True)
+            pts_x_std = torch.std(pts_x*mask - pts_x_mean, dim=1, keepdim=True)
             moment_transfer = (self.moment_transfer * self.moment_mul) + (
                     self.moment_transfer.detach() * (1 - self.moment_mul))
             moment_width_transfer = moment_transfer[0]
@@ -270,12 +284,8 @@ class RepPointsHead(nn.Module):
         ], 1)
         return grid_yx, regressed_bbox
 
-    def forward_single(self, x,test=False):
+    def forward_single(self, x):
 
-        # select_id=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        
-        select_id=random.sample(range(0,x.shape[0]),x.shape[0])
-        # select_id=torch.arange(x.shape[0])
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -289,14 +299,11 @@ class RepPointsHead(nn.Module):
             cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
             pts_feat = reg_conv(pts_feat)
-        support_pts_feat=pts_feat[select_id,:,:,:].detach()
-        support_cls_feat=cls_feat[select_id,:,:,:].detach()
-        fuse_feat=torch.cat([pts_feat,support_pts_feat],dim=1)
         # initialize reppoints
         pts_out_init_all = self.reppoints_pts_init_out(
-            self.relu(self.reppoints_pts_init_conv(fuse_feat)))
-        
+            self.relu(self.reppoints_pts_init_conv(pts_feat)))
         pts_out_init=pts_out_init_all[:,:18,:,:]
+        pts_out_init_mask=torch.sigmoid(pts_out_init_all[:,18:,:,:])
         pts_out_init = pts_out_init + points_init
         # refine and classify reppoints
         # control the grad between two loss,0.1 valid grad
@@ -305,151 +312,30 @@ class RepPointsHead(nn.Module):
         ) + self.gradient_mul * pts_out_init
         # to relative positioni
         dcn_offset = pts_out_init_grad_mul - dcn_base_offset
-        # self.reppoints.append(dcn_offset.data.cpu().numpy())
+        self.reppoints.append(dcn_offset.data.cpu().numpy())
         # deformable conv v2 add mask
         cls_feature1 = self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
         # mask computataion
         cls_mask = torch.sigmoid(self.reppoints_cls_mask(cls_feature1))
-        # self.mask_cls.append(cls_mask.data.cpu().numpy())
         # dcnv2
         cls_feature = self.relu(self.reppoints_cls_conv2(cls_feat, dcn_offset, cls_mask))
-
-        support_pts_out_init=pts_out_init_all[:,18:,:,:]
-        
-        support_pts_out_init_inv=pts_out_init.detach()+0
-        support_pts_out_init_inv[select_id,:,:,:]=support_pts_out_init
-        
-        support_pts_out_init = support_pts_out_init + points_init
-
-        support_pts_out_init_grad_mul = (1 - self.gradient_mul) * support_pts_out_init.detach(
-        ) + self.gradient_mul * support_pts_out_init
-
-        support_dcn_offset = support_pts_out_init_grad_mul - dcn_base_offset
-
-
-
-        support_cls_feature1 = self.relu(self.reppoints_cls_conv(support_cls_feat, support_dcn_offset))
-
-        support_cls_mask = torch.sigmoid(self.reppoints_cls_mask(support_cls_feature1))
-
-        support_cls_feature = self.relu(self.reppoints_cls_conv2(support_cls_feat, support_dcn_offset, support_cls_mask))
-        
-        fuse_cls_feature=cls_feature+support_cls_feature
-        fuse_cls_feature=self.relu(self.reppoints_cls_fuse(fuse_cls_feature))
-        cls_out = self.reppoints_cls_out(fuse_cls_feature)
+        cls_out = self.reppoints_cls_out(cls_feature)
 
         reg_feature1 = self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset))
         reg_mask = torch.sigmoid(self.reppoints_pts_refine_mask(reg_feature1))
-        # self.mask_reg.append(reg_mask.data.cpu().numpy())
         reg_feature = self.relu(self.reppoints_pts_refine_conv2(pts_feat, dcn_offset, reg_mask))
-
-        support_reg_feature1 = self.relu(self.reppoints_pts_refine_conv(support_pts_feat, support_dcn_offset))
-        support_reg_mask = torch.sigmoid(self.reppoints_pts_refine_mask(support_reg_feature1))
-        # self.mask_reg.append(reg_mask.data.cpu().numpy())
-        support_reg_feature = self.relu(self.reppoints_pts_refine_conv2(support_pts_feat, support_dcn_offset, support_reg_mask))
-        
-        fuse_reg_feature=reg_feature+support_reg_feature
-        fuse_reg_feature=self.relu(self.reppoints_pts_refine_fuse(fuse_reg_feature))
-        
-        pts_out_refine = self.reppoints_pts_refine_out(fuse_reg_feature)
+        pts_out_refine_all = self.reppoints_pts_refine_out(reg_feature)
         # detach the init grad
-        pts_out_refine = pts_out_refine + pts_out_init.detach()
-        
-
-        # the before is bug, it return support_pts_out_init
-        return cls_out, pts_out_init, pts_out_refine,support_pts_out_init_inv
-    def forward_single_test(self, x):
-	
-        # select_id=np.random.randint(low=0,high=x.shape[0],size=x.shape[0])
-        
-        
-        dcn_base_offset = self.dcn_base_offset.type_as(x)
-        # If we use center_init, the initial reppoints is from center points.
-        # If we use bounding bbox representation, the initial reppoints is
-        #   from regular grid placed on a pre-defined bbox.
-        # print(dcn_base_offset.view(-1))
-        # exit()
-        points_init = 0
-        cls_feat = x
-        pts_feat = x
-        for cls_conv in self.cls_convs:
-            cls_feat = cls_conv(cls_feat)
-        for reg_conv in self.reg_convs:
-            pts_feat = reg_conv(pts_feat)
-            
-        support_pts_feat=pts_feat[1:,:,:,:]
-        support_cls_feat=cls_feat[1:,:,:,:]
-        pts_feat=pts_feat[:1,:,:,:]
-        cls_feat=cls_feat[:1,:,:,:]
-        fuse_feat=torch.cat([pts_feat,support_pts_feat],dim=1)
-        # initialize reppoints
-        pts_out_init_all = self.reppoints_pts_init_out(
-            self.relu(self.reppoints_pts_init_conv(fuse_feat)))
-        
-        pts_out_init=pts_out_init_all[:,:18,:,:]
-        pts_out_init = pts_out_init + points_init
-        # refine and classify reppoints
-        # control the grad between two loss,0.1 valid grad
-        # certain postion
-        pts_out_init_grad_mul = (1 - self.gradient_mul) * pts_out_init.detach(
-        ) + self.gradient_mul * pts_out_init
-        # to relative positioni
-        dcn_offset = pts_out_init_grad_mul - dcn_base_offset
-        # self.reppoints.append(dcn_offset.data.cpu().numpy())
-        # deformable conv v2 add mask
-        cls_feature1 = self.relu(self.reppoints_cls_conv(cls_feat, dcn_offset))
-        # mask computataion
-        cls_mask = torch.sigmoid(self.reppoints_cls_mask(cls_feature1))
-        # self.mask_cls.append(cls_mask.data.cpu().numpy())
-        # dcnv2
-        cls_feature = self.relu(self.reppoints_cls_conv2(cls_feat, dcn_offset, cls_mask))
-
-        support_pts_out_init=pts_out_init_all[:,-18:,:,:]
-        support_pts_out_init = support_pts_out_init + points_init
-
-        support_pts_out_init_grad_mul = (1 - self.gradient_mul) * support_pts_out_init.detach(
-        ) + self.gradient_mul * support_pts_out_init
-
-        support_dcn_offset = support_pts_out_init_grad_mul - dcn_base_offset
-
-        support_cls_feature1 = self.relu(self.reppoints_cls_conv(support_cls_feat, support_dcn_offset))
-
-        support_cls_mask = torch.sigmoid(self.reppoints_cls_mask(support_cls_feature1))
-
-        support_cls_feature = self.relu(self.reppoints_cls_conv2(support_cls_feat, support_dcn_offset, support_cls_mask))
-        fuse_cls_feature=cls_feature+support_cls_feature
-        fuse_cls_feature=self.relu(self.reppoints_cls_fuse(fuse_cls_feature))
-        cls_out = self.reppoints_cls_out(fuse_cls_feature)
-
-        reg_feature1 = self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset))
-        reg_mask = torch.sigmoid(self.reppoints_pts_refine_mask(reg_feature1))
-        # self.mask_reg.append(reg_mask.data.cpu().numpy())
-        reg_feature = self.relu(self.reppoints_pts_refine_conv2(pts_feat, dcn_offset, reg_mask))
-        
-        support_reg_feature1 = self.relu(self.reppoints_pts_refine_conv(support_pts_feat, support_dcn_offset))
-        support_reg_mask = torch.sigmoid(self.reppoints_pts_refine_mask(support_reg_feature1))
-        # self.mask_reg.append(reg_mask.data.cpu().numpy())
-        support_reg_feature = self.relu(self.reppoints_pts_refine_conv2(support_pts_feat, support_dcn_offset, support_reg_mask))
-        
-        fuse_reg_feature=reg_feature+support_reg_feature
-        fuse_reg_feature=self.relu(self.reppoints_pts_refine_fuse(fuse_reg_feature))
-        
-        pts_out_refine = self.reppoints_pts_refine_out(fuse_reg_feature)
-        # detach the init grad
+        pts_out_refine=pts_out_refine_all[:,:18,:,:]
+        pts_out_refine_mask=torch.sigmoid(pts_out_refine_all[:,18:,:,:])
         pts_out_refine = pts_out_refine + pts_out_init.detach()
 
-        support_pts_out_init_inv=support_pts_out_init
-        
-        return cls_out, pts_out_init, pts_out_refine,support_pts_out_init_inv
-    def forward(self, feats,test=False):
+        return cls_out, pts_out_init, pts_out_refine,pts_out_init_mask,pts_out_refine_mask
+
+    def forward(self, feats):
         # 5 feature map
         self.reppoints = []
-        self.mask_cls=[]
-        self.mask_reg=[]
-        if not test:
-            outs = multi_apply(self.forward_single, feats)
-        else:
-            outs = multi_apply(self.forward_single, feats)
+        outs = multi_apply(self.forward_single, feats)
         return outs
 
     def get_points(self, featmap_sizes, img_metas):
@@ -530,11 +416,17 @@ class RepPointsHead(nn.Module):
             pts_list.append(pts_lvl)
         return pts_list
 
-    def loss_single(self, cls_score, pts_pred_init, pts_pred_refine, labels,
+    def loss_single(self, cls_score, pts_pred_init, pts_pred_refine,
+                    pts_preds_init_mask,
+                    pts_preds_refine_mask,
+                    labels,
                     label_weights, bbox_gt_init, bbox_weights_init,
                     bbox_gt_refine, bbox_weights_refine, stride,
                     num_total_samples_init, num_total_samples_refine):
         # classification loss
+        print(pts_pred_init.shape,pts_pred_refine.shape)
+        pts_preds_init_mask=pts_preds_init_mask.permute(0,2,3,1).reshape(-1,9)
+        pts_preds_refine_mask=pts_preds_refine_mask.permute(0,2,3,1).reshape(-1,9)
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
@@ -549,11 +441,11 @@ class RepPointsHead(nn.Module):
         bbox_gt_init = bbox_gt_init.reshape(-1, 4)
         bbox_weights_init = bbox_weights_init.reshape(-1, 4)
         bbox_pred_init = self.points2bbox(
-            pts_pred_init.reshape(-1, 2 * self.num_points), y_first=False)
+            pts_pred_init.reshape(-1, 2 * self.num_points),pts_preds_init_mask, y_first=False)
         bbox_gt_refine = bbox_gt_refine.reshape(-1, 4)
         bbox_weights_refine = bbox_weights_refine.reshape(-1, 4)
         bbox_pred_refine = self.points2bbox(
-            pts_pred_refine.reshape(-1, 2 * self.num_points), y_first=False)
+            pts_pred_refine.reshape(-1, 2 * self.num_points), pts_preds_refine_mask,y_first=False)
         normalize_term = self.point_base_scale * stride
         loss_pts_init = self.loss_bbox_init(
             bbox_pred_init / normalize_term,
@@ -568,15 +460,16 @@ class RepPointsHead(nn.Module):
         return loss_cls, loss_pts_init, loss_pts_refine
 
     def loss(self,
-             cls_scores,
-             pts_preds_init,
-             pts_preds_refine,
-             support_pts_out_init,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             cfg,
-             gt_bboxes_ignore=None):
+            cls_scores,
+            pts_preds_init,
+            pts_preds_refine,
+            pts_preds_init_mask,
+            pts_preds_refine_mask,
+            gt_bboxes,
+            gt_labels,
+            img_metas,
+            cfg,
+            gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         # print(len(featmap_sizes),len(self.point_generators))
         assert len(featmap_sizes) == len(self.point_generators)
@@ -587,10 +480,6 @@ class RepPointsHead(nn.Module):
                                                        img_metas)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
-
-        pts_coordinate_preds_init_support = self.offset_to_pts(center_list,
-                                                       support_pts_out_init)
-        
         if cfg.init.assigner['type'] == 'PointAssigner':
             # Assign target for center list
             candidate_list = center_list
@@ -625,7 +514,7 @@ class RepPointsHead(nn.Module):
             bbox = []
             for i_lvl in range(len(pts_preds_refine)):
                 bbox_preds_init = self.points2bbox(
-                    pts_preds_init[i_lvl].detach())
+                    pts_preds_init[i_lvl].detach(),pts_preds_init_mask[i_lvl].detach())
                 bbox_shift = bbox_preds_init * self.point_strides[i_lvl]
                 bbox_center = torch.cat(
                     [center[i_lvl][:, :2], center[i_lvl][:, :2]], dim=1)
@@ -648,13 +537,16 @@ class RepPointsHead(nn.Module):
         num_total_samples_refine = (
             num_total_pos_refine +
             num_total_neg_refine if self.sampling else num_total_pos_refine)
-
+        # print('loss')
+        
         # compute loss
         losses_cls, losses_pts_init, losses_pts_refine = multi_apply(
             self.loss_single,
             cls_scores,
             pts_coordinate_preds_init,
             pts_coordinate_preds_refine,
+            pts_preds_init_mask,
+            pts_preds_refine_mask,
             labels_list,
             label_weights_list,
             bbox_gt_list_init,
@@ -664,46 +556,29 @@ class RepPointsHead(nn.Module):
             self.point_strides,
             num_total_samples_init=num_total_samples_init,
             num_total_samples_refine=num_total_samples_refine)
-
-        #compute prediction bbox loss
-        _, losses_pts_init_support, _ = multi_apply(
-        self.loss_single,
-        cls_scores,
-        pts_coordinate_preds_init_support,
-        pts_coordinate_preds_refine,
-        labels_list,
-        label_weights_list,
-        bbox_gt_list_init,
-        bbox_weights_list_init,
-        bbox_gt_list_refine,
-        bbox_weights_list_refine,
-        self.point_strides,
-        num_total_samples_init=num_total_samples_init,
-        num_total_samples_refine=num_total_samples_refine)
-
         loss_dict_all = {
             'loss_cls': losses_cls,
             'loss_pts_init': losses_pts_init,
-            'loss_pts_refine': losses_pts_refine,
-            'loss_pts_pred': losses_pts_init_support,
+            'loss_pts_refine': losses_pts_refine
         }
         # print('losses_cls:',torch.stack(losses_cls).mean().item())
         # print('loss_pts_init:',torch.stack(losses_pts_init).mean().item())
         # print('loss_pts_refine:',torch.stack(losses_pts_refine).mean().item())
-        # self.losses_cls = torch.stack(losses_cls).mean().item()
-        # self.loss_pts_init = torch.stack(losses_pts_init).mean().item()
-        # self.loss_pts_refine = torch.stack(losses_pts_refine).mean().item()
+        self.losses_cls = torch.stack(losses_cls).mean().item()
+        self.loss_pts_init = torch.stack(losses_pts_init).mean().item()
+        self.loss_pts_refine = torch.stack(losses_pts_refine).mean().item()
         return loss_dict_all
 
     def get_bboxes(self,
-                   cls_scores,
-                   pts_preds_init,
-                   pts_preds_refine,
-                   pts_preds_init_all,
-                   img_metas,
-                   cfg,
-                   rescale=False,
-                   nms=True, index=False):
+                cls_scores,
+                pts_preds_init,
+                pts_preds_refine,
+                pts_preds_init_mask,
+                pts_preds_refine_mask,
+                img_metas,
+                cfg,
+                rescale=False,
+                nms=True, index=False):
         assert len(cls_scores) == len(pts_preds_refine)
         bbox_preds_refine = [
             self.points2bbox(pts_pred_refine)

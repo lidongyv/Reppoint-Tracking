@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/code/reppoint_waymo_minmax_baseline_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/epoch_43.pth'
+config_file ='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withoutmask_do3/code/reppoint_waymo_moment_withoutmask_baseline_do3.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withoutmask_do3/epoch_43.pth'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -74,7 +74,7 @@ with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/epoch_43_thres0.3_nms0.5_val54'
+out_path='/home/ld/RepPoints/ld_result/reppoint_waymo_moment_withoutmask_do3/epoch_43_thres0.3_nms0.5_val54'
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)

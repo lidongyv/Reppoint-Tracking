@@ -2,7 +2,7 @@
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
-    type='RepPointsDetector',
+    type='RepPointsDetector_Baseline',
     pretrained='modelzoo://resnet101',
     backbone=dict(
         type='ResNet',
@@ -25,7 +25,7 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='RepPointsHead',
+        type='RepPointsHead_WithMask',
         num_classes=3,
         in_channels=256,
         feat_channels=256,
@@ -117,12 +117,12 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_8.json',
+        ann_file='/backdata01/waymo_val_54.json',
         img_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_8.json',
+        ann_file='/backdata01/waymo_val_54.json',
         img_prefix=data_root ,
         pipeline=test_pipeline))
 # optimizer

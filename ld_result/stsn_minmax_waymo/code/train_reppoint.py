@@ -214,7 +214,10 @@ def main():
 			video_id=data['img_meta'].data[0][0]['filename'].split('/')[-2]
 			print('start image:',data['img_meta'].data[0][0]['filename'])
 			print('end image:',data['img_meta'].data[-1][-1]['filename'])
-
+			# if i==0:
+   			# 	data0=data
+			# else:
+			# 	data=data0
 
 			losses=model(return_loss=True, **data)
 			losses, log_vars = parse_losses(losses)

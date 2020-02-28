@@ -2,8 +2,8 @@
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
-    type='RepPointsDetector_Baseline',
-    pretrained='modelzoo://resnet101',
+    type='RepPointsDetector',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
         depth=101,
@@ -12,9 +12,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         dcn=dict(
-            modulated=False,
-            deformable_groups=1,
-            fallback_on_stride=False),
+            modulated=False, deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',
@@ -25,8 +23,8 @@ model = dict(
         num_outs=5,
         norm_cfg=norm_cfg),
     bbox_head=dict(
-        type='RepPointsHead_Baseline',
-        num_classes=3,
+        type='RepPointsHead',
+        num_classes=81,
         in_channels=256,
         feat_channels=256,
         point_feat_channels=256,
@@ -44,7 +42,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox_init=dict(type='SmoothL1Loss', beta=0.11, loss_weight=0.5),
         loss_bbox_refine=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0),
-        transform_method='minmax'))
+        transform_method='moment_mask'))
 # training and testing settings
 train_cfg = dict(
     init=dict(
@@ -65,21 +63,21 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.3,
+    score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
-dataset_type = 'KittiDataset'
-data_root = ''
+dataset_type = 'CocoDataset'
+data_root = '/home/ld/RepPoints/backdata01/ld/59/RepPoints/data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-	dict(type='Resize', img_scale=(768, 512), keep_ratio=True),
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(512, 768),size_divisor=256),
+    dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
@@ -87,43 +85,34 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(768, 512),
+        img_scale=(1333, 800),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size=(512, 768),size_divisor=256),
+            dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
 ]
-#one card time:0.125s one frame
-#20:2.81
-#18:2.52
-#15:2.07
-#10:1.41
-#5:0.75
-#eight cards time:0.03s one frame
-#5*8:1.42
-#10*8:2.5
 data = dict(
     imgs_per_gpu=8,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_train_269.json',
-        img_prefix=data_root,
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_54.json',
-        img_prefix=data_root,
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_54.json',
-        img_prefix=data_root ,
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
@@ -138,23 +127,18 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=100,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 30
-# device_ids = range(3)
+total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/home/ld/RepPoints/ld_result/reppoint_waymo_do3'
-load_from='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_23.pth'
-# load_from='/home/ld/RepPoints/debug/reppoint_stsn/epoch_29.pth'
-# load_from = '/home/ld/RepPoints/debug/stsn_one_flow/epoch_23.pth'
-# load_from='/home/ld/RepPoints/ld_result/stsn_from_reppoint/epoch_9.pth'
-# load_from = '/home/ld/RepPoints/work_dirs/reppoints_moment_r101_dcn_fpn_kitti_mt_class3/epoch_30.pth'
+work_dir = '/home/ld/RepPoints/ld_result/reppoint_coco_moment'
+load_from = '/home/ld/RepPoints/trained/reppoints_moment_r101_dcn_fpn_2x_mt.pth'
 resume_from = None
 auto_resume = True
 workflow = [('train', 1)]

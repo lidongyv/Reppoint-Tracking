@@ -57,7 +57,7 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		dataset=dataset_name,
 		print_summary=True)
 config_file ='/home/ld/RepPoints/configs/reppoint_waymo_monent_prediction_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/prediction/epoch_45.pth'
+checkpoint_file='/home/ld/RepPoints/ld_result/prediction_moment_waymo/epoch_45.pth'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -67,14 +67,14 @@ cfg.model.pretrained = None
 cfg.data.test.test_mode = True
 dataset = build_dataset(cfg.data.test)
 data_path='/backdata01/'
-jsonfile_name='waymo_val_8.json'
+jsonfile_name='waymo_val_54.json'
 # test a video and show the results
 with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/prediction/epoch_45_thres0.3_nms0.5'
+out_path='/home/ld/RepPoints/ld_result/prediction_moment_waymo/epoch_45_thres0.3_nms0.5_54'
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)

@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/code/reppoint_waymo_minmax_baseline_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/epoch_43.pth'
+config_file ='/home/ld/RepPoints/configs/reppoint_baseline_do3.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33.pth'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -67,14 +67,14 @@ cfg.model.pretrained = None
 cfg.data.test.test_mode = True
 dataset = build_dataset(cfg.data.test)
 data_path='/backdata01/'
-jsonfile_name='waymo_val_54.json'
+jsonfile_name='kitti_bdd_waymo_2class_val_13.json'
 # test a video and show the results
 with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
 support_count=2
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/reppoint_waymo_minmax_do3/epoch_43_thres0.3_nms0.5_val54'
+out_path='/home/ld/RepPoints/ld_result/reppoint_do3/epoch_33_thres0.3_nms0.5'
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
@@ -130,16 +130,11 @@ for i,(frame) in enumerate(data):
 	loc_data.append(loc_result)
 	for m in range(len(reppoint_t)):
 		reppoint_data[m].append(reppoint_t[m])
-print('133 debug')
-from IPython import embed
-embed()
+
 mmcv.dump(result_record, os.path.join(out_path,out_name,'det_result.pkl'))
 mmcv.dump(loc_data, os.path.join(out_path,out_name,'loc_result.pkl'))
 mmcv.dump(reppoint_data,os.path.join(out_path,out_name,'reppoints.pkl'))
 
 print('evaluating result of ', out_name)
 kitti_eval(result_record, dataset)
-print('140 debug')
-from IPython import embed
-embed()
 

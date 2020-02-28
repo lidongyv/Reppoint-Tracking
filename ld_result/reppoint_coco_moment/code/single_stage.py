@@ -83,7 +83,7 @@ class SingleStageDetector(BaseDetector):
 
         x = self.extract_feat(img)
         
-        # print(img.shape)
+        print(img.shape)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         losses = self.bbox_head.loss(
@@ -96,10 +96,14 @@ class SingleStageDetector(BaseDetector):
         print('single test')
         print(img.shape)
         x = self.extract_feat(img)
-        outs = self.bbox_head(x,test=True)
+        outs = self.bbox_head(x)
         index=True
         bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_list = self.bbox_head.get_bboxes(*bbox_inputs,index=index)
+        # print(bbox_list[0][2])
+        # print(bbox_list[0][:2])
+        # # print(bbox_results)
+        # exit()
         box_loc=bbox_list[0][2]
         bbox_list=[bbox_list[0][:2]]
 

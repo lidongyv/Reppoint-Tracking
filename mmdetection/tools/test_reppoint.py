@@ -56,8 +56,8 @@ def kitti_eval(det_results, dataset, iou_thr=0.5):
 		iou_thr=iou_thr,
 		dataset=dataset_name,
 		print_summary=True)
-config_file ='/home/ld/RepPoints/configs/reppoint_waymo_monent_prediction_do3.py'
-checkpoint_file='/home/ld/RepPoints/ld_result/prediction/epoch_45.pth'
+config_file ='/home/ld/RepPoints/configs/reppoint_waymo_minmax_stsn.py'
+checkpoint_file='/home/ld/RepPoints/ld_result/stsn_minmax_waymo/epoch_73.pth'
 
 cfg = mmcv.Config.fromfile(config_file)
 # set cudnn_benchmark
@@ -72,9 +72,9 @@ jsonfile_name='waymo_val_8.json'
 with open(os.path.join(data_path,jsonfile_name),'r',encoding='utf-8') as f:
 	data=json.load(f)
 compute_time=0
-support_count=2
+support_num=1
 out_name='refer'
-out_path='/home/ld/RepPoints/ld_result/prediction/epoch_45_thres0.3_nms0.5'
+out_path='/home/ld/RepPoints/ld_result/stsn_minmax_waymo/epoch_73_thres0.3_nms0.5_'+str(support_num)
 print(out_path)
 if not os.path.exists(out_path):
 	os.mkdir(out_path)
@@ -123,7 +123,16 @@ for i,(frame) in enumerate(data):
 	img_name=frame['filename']
 	# img = mmcv.imread(os.path.join(data_path,img_name))
 	img=os.path.join(data_path,img_name)
-	img_list=img
+	img_list=[img]
+
+
+	if data[i-support_num]['video_id']==video_name:
+		img_list.append(os.path.join(data_path,data[i-support_num]['filename']))
+	elif data[i+support_num]['video_id']==video_name:
+		img_list.append(os.path.join(data_path,data[i+support_num]['filename']))
+	else:
+		img_list.append(os.path.join(data_path,data[i]['filename']))
+
 	result = inference_trackor(model, img_list)
 	reppoint_t=model.bbox_head.reppoints
 	mask_cls_t=model.bbox_head.mask_cls

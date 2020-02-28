@@ -117,12 +117,12 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_8.json',
+        ann_file='/backdata01/waymo_val_54.json',
         img_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file='/backdata01/waymo_val_8.json',
+        ann_file='/backdata01/waymo_val_54.json',
         img_prefix=data_root ,
         pipeline=test_pipeline))
 # optimizer
